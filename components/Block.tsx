@@ -84,7 +84,7 @@ export const Block: React.FC<BlockProps> = ({
     }, 
     // Light Tile Colors (When acts as Floor)
     LightFloor: { 
-      base: '#e5e5e5', top: '#ffffff', left: '#d4d4d4', right: '#d4d4d4', bottom: '#a3a3a3' 
+      base: '#f5f5f4', top: '#f5f5f4', left: '#f5f5f4', right: '#f5f5f4', bottom: '#f5f5f4' 
     },
     // Light Tile Colors (When acts as Wall) - Slightly darker side slopes to show height
     LightWall: {
@@ -92,7 +92,7 @@ export const Block: React.FC<BlockProps> = ({
     },
     // Dark Tile Colors (When acts as Floor)
     DarkFloor: { 
-      base: '#18181b', top: '#27272a', left: '#09090b', right: '#09090b', bottom: '#000000' 
+      base: '#18181b', top: '#18181b', left: '#18181b', right: '#18181b', bottom: '#18181b' 
     },
     // Dark Tile Colors (When acts as Wall)
     DarkWall: {
@@ -105,8 +105,9 @@ export const Block: React.FC<BlockProps> = ({
     P2: { base: '#171717', top: '#404040', left: '#262626', right: '#262626', bottom: '#000000' },
   };
 
-  const WALL_BORDER_WIDTH = 12;
-  const FLOOR_BORDER_WIDTH = 2;
+  const WALL_BORDER_WIDTH = 4;
+  const FLOOR_BORDER_WIDTH = 0;
+  const LAYERS = { floor: 1, target: 2, active: 5 };
 
   // Decide colors and thickness
   if (terrain === TerrainType.Wall) {
@@ -143,6 +144,29 @@ export const Block: React.FC<BlockProps> = ({
         ? { backgroundColor: '#111', border: '1px dashed #333' }
         : { backgroundColor: 'transparent' };
   }
+
+  if (isP1Here && activeChar !== CharacterType.P1_White) {
+    style = get3DStyle(
+      C.LightFloor.base,
+      C.LightFloor.top,
+      C.LightFloor.left,
+      C.LightFloor.right,
+      C.LightFloor.bottom,
+      FLOOR_BORDER_WIDTH
+    );
+  } else if (isP2Here && activeChar !== CharacterType.P2_Black) {
+    style = get3DStyle(
+      C.DarkFloor.base,
+      C.DarkFloor.top,
+      C.DarkFloor.left,
+      C.DarkFloor.right,
+      C.DarkFloor.bottom,
+      FLOOR_BORDER_WIDTH
+    );
+  }
+
+  const tileZIndex = isVisualWall ? 2 : 0;
+  style = { ...style, zIndex: tileZIndex };
 
   // --- Inner Corner Rendering (For Visual Walls) ---
   const renderInnerCorner = (pos: 'tl'|'tr'|'bl'|'br') => {
@@ -203,24 +227,60 @@ export const Block: React.FC<BlockProps> = ({
   // --- Character Rendering ---
   const renderCharacter = (type: CharacterType) => {
     const isActive = activeChar === type;
-    const colors = type === CharacterType.P1_White ? C.P1 : C.P2;
-    const sizeClass = isActive ? "w-[75%] h-[75%] z-20" : "w-[60%] h-[60%] z-10 opacity-70";
-    
+    const palette = type === CharacterType.P1_White ? C.LightWall : C.DarkWall;
+    const eyeColorClass = type === CharacterType.P1_White ? 'bg-black' : 'bg-white';
+    const layer = isActive ? LAYERS.active : LAYERS.floor;
+
+    const renderEyes = (size: string) => (
+      <div className="absolute top-[30%] left-0 right-0 flex justify-center gap-[20%]">
+        <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
+        <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
+      </div>
+    );
+
+    if (!isActive) {
+      const floorPalette = type === CharacterType.P1_White ? C.LightFloor : C.DarkFloor;
+      return (
+        <div className="pointer-events-none absolute inset-0" style={{ zIndex: layer }}>
+          <div
+            className="w-full h-full relative"
+            style={get3DStyle(
+              floorPalette.base,
+              floorPalette.top,
+              floorPalette.left,
+              floorPalette.right,
+              floorPalette.bottom,
+              FLOOR_BORDER_WIDTH
+            )}
+          >
+            {renderEyes('w-[14%]')}
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <div className={`absolute inset-0 m-auto flex items-center justify-center transition-all duration-300 ${sizeClass}`}>
-        <div 
-          className={`w-full h-full shadow-2xl transition-transform duration-200 ${isActive ? '-translate-y-2' : ''}`}
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        style={{ zIndex: layer }}
+      >
+        <div
+          className="w-full h-full shadow-xl relative"
           style={{
-            ...get3DStyle(colors.base, colors.top, colors.left, colors.right, colors.bottom, 4),
-            boxShadow: isActive 
-              ? `0 10px 15px -3px ${type === CharacterType.P1_White ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.5)'}` 
-              : '0 4px 6px rgba(0,0,0,0.3)'
+            ...get3DStyle(
+              palette.base,
+              palette.top,
+              palette.left,
+              palette.right,
+              palette.bottom,
+              WALL_BORDER_WIDTH
+            ),
+            boxShadow: isActive
+              ? '0 12px 18px rgba(0,0,0,0.55)'
+              : '0 4px 10px rgba(0,0,0,0.4)'
           }}
         >
-            <div className="absolute top-[25%] left-0 right-0 flex justify-center gap-[15%] opacity-80">
-                <div className={`w-[15%] aspect-square rounded-sm ${type === CharacterType.P1_White ? 'bg-black' : 'bg-white'}`}></div>
-                <div className={`w-[15%] aspect-square rounded-sm ${type === CharacterType.P1_White ? 'bg-black' : 'bg-white'}`}></div>
-            </div>
+          {renderEyes('w-[16%]')}
         </div>
       </div>
     );
@@ -228,9 +288,12 @@ export const Block: React.FC<BlockProps> = ({
 
   // --- Target Rendering ---
   const renderTarget = () => (
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+    <div
+      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+      style={{ zIndex: LAYERS.target }}
+    >
       <div className="w-[60%] h-[60%] bg-emerald-500/20 rounded-full animate-pulse absolute"></div>
-      <div 
+      <div
         className="w-[30%] h-[30%] bg-emerald-500 shadow-[0_0_10px_#10b981]"
         style={{
             transform: 'rotate(45deg)',
@@ -256,10 +319,8 @@ export const Block: React.FC<BlockProps> = ({
       {renderInnerCorner('br')}
 
       {isTarget && renderTarget()}
-      {isP1Here && activeChar !== CharacterType.P1_White && renderCharacter(CharacterType.P1_White)}
-      {isP2Here && activeChar !== CharacterType.P2_Black && renderCharacter(CharacterType.P2_Black)}
-      {isP1Here && activeChar === CharacterType.P1_White && renderCharacter(CharacterType.P1_White)}
-      {isP2Here && activeChar === CharacterType.P2_Black && renderCharacter(CharacterType.P2_Black)}
+      {isP1Here && renderCharacter(CharacterType.P1_White)}
+      {isP2Here && renderCharacter(CharacterType.P2_Black)}
       
       {editorMode && (
         <div className="absolute inset-0 hover:bg-white/10 transition-colors pointer-events-none"></div>

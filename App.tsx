@@ -6,6 +6,7 @@ import {
   Gamepad2, RotateCcw, Play, PenTool, Download, Upload, 
   Check, X, Globe, Move, Grid3X3, Trash2
 } from 'lucide-react';
+import { getEffectiveTerrain } from './terrainUtils';
 
 const App: React.FC = () => {
   // --- Global State ---
@@ -23,6 +24,24 @@ const App: React.FC = () => {
   });
   const [moveCount, setMoveCount] = useState(0);
   const [isWon, setIsWon] = useState(false);
+  const gameStateRef = useRef(gameState);
+  const prevActiveCharRef = useRef<CharacterType | null>(null);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useEffect(() => {
+    if (prevActiveCharRef.current === null) {
+      prevActiveCharRef.current = gameState.activeChar;
+      return;
+    }
+    if (prevActiveCharRef.current !== gameState.activeChar) {
+      initAudio();
+      playSound('switch');
+    }
+    prevActiveCharRef.current = gameState.activeChar;
+  }, [gameState.activeChar]);
 
   // --- Editor State ---
   const [editorTool, setEditorTool] = useState<EditorTool>('wall');
@@ -71,6 +90,14 @@ const App: React.FC = () => {
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
       osc.start(now);
       osc.stop(now + 0.6);
+    } else if (type === 'error') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(90, now);
+      osc.frequency.linearRampToValueAtTime(60, now + 0.15);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.2);
     }
   };
 
@@ -165,7 +192,7 @@ const App: React.FC = () => {
       }
 
       // 2. Terrain Check
-      const targetTerrain = currentLevel.terrain[targetY][targetX];
+      const targetTerrain = getEffectiveTerrain(currentLevel, prev, targetX, targetY);
       if (targetTerrain === TerrainType.Wall || targetTerrain === TerrainType.Void) {
         return prev;
       }
@@ -209,13 +236,28 @@ const App: React.FC = () => {
   const handleSwitch = useCallback(() => {
     if (isWon || mode === 'edit') return;
     initAudio();
-    playSound('switch');
-    setGameState(prev => ({
-      ...prev,
-      activeChar: prev.activeChar === CharacterType.P1_White 
-        ? CharacterType.P2_Black 
-        : CharacterType.P1_White
-    }));
+
+    const overlapping =
+      gameStateRef.current.p1Pos.x === gameStateRef.current.p2Pos.x &&
+      gameStateRef.current.p1Pos.y === gameStateRef.current.p2Pos.y;
+
+    if (overlapping) {
+      playSound('error');
+      return;
+    }
+
+    setGameState(prev => {
+      const stillOverlapping = prev.p1Pos.x === prev.p2Pos.x && prev.p1Pos.y === prev.p2Pos.y;
+      if (stillOverlapping) {
+        return prev;
+      }
+      return {
+        ...prev,
+        activeChar: prev.activeChar === CharacterType.P1_White
+          ? CharacterType.P2_Black
+          : CharacterType.P1_White
+      };
+    });
   }, [isWon, mode]);
 
   // --- Input Handlers ---

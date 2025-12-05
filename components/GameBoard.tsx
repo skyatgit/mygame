@@ -1,6 +1,7 @@
 import React from 'react';
 import { LevelData, GameState, Position, TerrainType, CharacterType } from '../types';
 import { Block } from './Block';
+import { getEffectiveTerrain } from '../terrainUtils';
 
 interface GameBoardProps {
   level: LevelData;
@@ -31,7 +32,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Out of bounds is never a wall, ensuring outer edges always have slopes
     if (x < 0 || x >= level.width || y < 0 || y >= level.height) return null; 
     
-    const t = level.terrain[y][x];
+    const t = getEffectiveTerrain(level, gameState, x, y);
 
     // 1. Static Hard Walls (Gray)
     if (t === TerrainType.Wall) return 'WALL_STATIC';
@@ -64,7 +65,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }}
       >
         {level.terrain.map((row, y) => (
-          row.map((terrain, x) => {
+          row.map((baseTerrain, x) => {
+            const terrain = getEffectiveTerrain(level, gameState, x, y);
             const isTarget = level.targets.some(t => t.x === x && t.y === y);
             
             // Get the exact type of the current block
