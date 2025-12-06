@@ -3,7 +3,7 @@ import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
 import {
-  Gamepad2, PenTool, Download, Upload,
+  Gamepad2, PenTool,
   Check, Globe, Trash2
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
@@ -57,7 +57,6 @@ const App: React.FC = () => {
 
   // --- Editor State ---
   const [editorTool, setEditorTool] = useState<EditorTool>('wall');
-  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const startGame = useCallback(() => {
     if (hasStarted) return;
@@ -513,32 +512,6 @@ const App: React.FC = () => {
     }));
   };
 
-  const exportLevel = () => {
-    const data = JSON.stringify(currentLevel);
-    navigator.clipboard.writeText(data).then(() => {
-      setCopyFeedback(true);
-      setTimeout(() => setCopyFeedback(false), 2000);
-    });
-  };
-
-  const importLevel = () => {
-    const data = prompt(t.importPrompt);
-    if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        // Basic validation
-        if (parsed.width && parsed.height && parsed.terrain && parsed.p1Start) {
-          setCurrentLevel(parsed);
-          resetGame();
-        } else {
-          alert(t.error);
-        }
-      } catch (e) {
-        alert(t.error);
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#111] text-gray-200 flex flex-col items-stretch font-sans select-none">
       
@@ -701,16 +674,6 @@ const App: React.FC = () => {
                      style={{ transform: 'translateZ(0)' }}
                    >
                      {t.toolLabels.p2}
-                   </button>
-                </div>
-
-                <div className="flex gap-1.5 mt-1 pt-1.5 border-t border-[#333]">
-                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
-                      {copyFeedback ? <Check size={14} className="text-green-500"/> : <Download size={14}/>}
-                      {copyFeedback ? t.copied : t.export}
-                   </button>
-                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
-                      <Upload size={14}/> {t.import}
                    </button>
                 </div>
              </div>
