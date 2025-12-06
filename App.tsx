@@ -587,9 +587,9 @@ const App: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                    {[
                      { id: 'wall', label: t.toolLabels.wall, color: 'bg-neutral-800' },
-                     { id: 'dark', label: t.toolLabels.dark, color: 'bg-black border border-gray-700' },
-                     { id: 'light', label: t.toolLabels.light, color: 'bg-gray-200 text-black' },
                      { id: 'eraser', label: t.toolLabels.eraser, color: 'bg-neutral-900 border border-red-900/50 text-red-500', icon: Trash2 },
+                     { id: 'light', label: t.toolLabels.light, color: 'bg-gray-200 text-black' },
+                     { id: 'dark', label: t.toolLabels.dark, color: 'bg-black border border-gray-700' },
                      { id: 'p1', label: t.toolLabels.p1, color: 'bg-white text-black border border-gray-400' },
                      { id: 'p2', label: t.toolLabels.p2, color: 'bg-black text-white border border-gray-600' },
                      { id: 'target', label: t.toolLabels.target, color: 'bg-green-900 text-green-400 border border-green-700' },
