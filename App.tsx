@@ -160,6 +160,13 @@ const App: React.FC = () => {
 
   const gamepadButtonStateRef = useRef({ start: false, switch: false, reset: false });
   const lastGamepadMoveTimeRef = useRef(0);
+  const suppressGamepadSwitchRef = useRef(false);
+ 
+  useEffect(() => {
+    if (!hasStarted) return;
+    gamepadButtonStateRef.current = { start: false, switch: false, reset: false };
+    lastGamepadMoveTimeRef.current = performance.now();
+  }, [hasStarted]);
  
   // --- Game Logic ---
 
@@ -315,20 +322,28 @@ const App: React.FC = () => {
       const gp = gamepads[0]; // Assume P1
       if (gp && mode === 'play') {
         const btnStart = gp.buttons[0]?.pressed ?? false;
-        const lastButtonState = gamepadButtonStateRef.current;
-        if (!hasStarted) {
-          if (btnStart && !lastButtonState.start) startGame();
-          gamepadButtonStateRef.current = { ...lastButtonState, start: btnStart };
-          animationFrameId = requestAnimationFrame(pollGamepad);
-          return;
-        }
+        const prevButtonState = gamepadButtonStateRef.current;
+         if (!hasStarted) {
+          if (btnStart && !prevButtonState.start) {
+            startGame();
+            suppressGamepadSwitchRef.current = true; // 需松开 A 键后才允许切换
+          }
+          gamepadButtonStateRef.current = { start: btnStart, switch: false, reset: false };
+           animationFrameId = requestAnimationFrame(pollGamepad);
+           return;
+         }
          // Buttons: 0 (A/Cross), 1 (B/Circle), 2 (X/Square), 3 (Y/Triangle)
          // Let's say Button 0 or 3 switches.
          const btnSwitch = gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[2].pressed || gp.buttons[3].pressed;
          const btnReset = gp.buttons[8].pressed || gp.buttons[9].pressed; // Select/Start often
  
-         if (btnSwitch && !lastButtonState.switch) handleSwitch();
-         if (btnReset && !lastButtonState.reset) resetGame();
+         if (suppressGamepadSwitchRef.current) {
+           if (!btnSwitch) suppressGamepadSwitchRef.current = false;
+         } else if (btnSwitch && !prevButtonState.switch) {
+           handleSwitch();
+         }
+ 
+         if (btnReset && !prevButtonState.reset) resetGame();
  
          // D-Pad / Stick
          // Axes: 0 (Left Stick X), 1 (Left Stick Y)
@@ -347,7 +362,7 @@ const App: React.FC = () => {
              else if (axisX > 0.5 || dpadRight) { handleMove(1, 0); lastGamepadMoveTimeRef.current = now; }
          }
  
-         gamepadButtonStateRef.current = { ...lastButtonState, start: btnStart, switch: btnSwitch, reset: btnReset };
+         gamepadButtonStateRef.current = { start: btnStart, switch: btnSwitch, reset: btnReset };
         }
        animationFrameId = requestAnimationFrame(pollGamepad);
      };
