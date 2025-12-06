@@ -561,7 +561,7 @@ const App: React.FC = () => {
   };
 
   const importLevel = () => {
-    const data = prompt("Paste level JSON here:");
+    const data = prompt(t.importPrompt);
     if (data) {
       try {
         const parsed = JSON.parse(data);
@@ -676,13 +676,13 @@ const App: React.FC = () => {
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-2">{t.tools}</div>
                 <div className="grid grid-cols-2 gap-2">
                    {[
-                     { id: 'wall', label: 'WALL', color: 'bg-neutral-800' },
-                     { id: 'dark', label: 'DARK', color: 'bg-black border border-gray-700' },
-                     { id: 'light', label: 'LIGHT', color: 'bg-gray-200 text-black' },
-                     { id: 'eraser', label: 'VOID', color: 'bg-neutral-900 border border-red-900/50 text-red-500', icon: Trash2 },
-                     { id: 'p1', label: 'START P1', color: 'bg-white text-black border border-gray-400' },
-                     { id: 'p2', label: 'START P2', color: 'bg-black text-white border border-gray-600' },
-                     { id: 'target', label: 'TARGET', color: 'bg-green-900 text-green-400 border border-green-700' },
+                     { id: 'wall', label: t.toolLabels.wall, color: 'bg-neutral-800' },
+                     { id: 'dark', label: t.toolLabels.dark, color: 'bg-black border border-gray-700' },
+                     { id: 'light', label: t.toolLabels.light, color: 'bg-gray-200 text-black' },
+                     { id: 'eraser', label: t.toolLabels.eraser, color: 'bg-neutral-900 border border-red-900/50 text-red-500', icon: Trash2 },
+                     { id: 'p1', label: t.toolLabels.p1, color: 'bg-white text-black border border-gray-400' },
+                     { id: 'p2', label: t.toolLabels.p2, color: 'bg-black text-white border border-gray-600' },
+                     { id: 'target', label: t.toolLabels.target, color: 'bg-green-900 text-green-400 border border-green-700' },
                    ].map((tool) => (
                       <button
                         key={tool.id}
@@ -759,17 +759,17 @@ const App: React.FC = () => {
       {!hasStarted && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
           <div className="bg-[#1b1b1b] border border-white/10 rounded-2xl px-8 py-10 text-center space-y-6 shadow-2xl">
-            <h2 className="text-3xl font-bold text-white tracking-wide">准备好开始了吗？</h2>
-            <p className="text-sm text-gray-400">点击按钮或使用键盘 E / 手柄 A 即可开始游戏。</p>
-            <button
-              onClick={startGame}
-              className="px-8 py-3 rounded-full bg-white text-black font-bold text-lg tracking-wide hover:scale-105 transition"
-            >
-               开始游戏
-             </button>
-           </div>
-         </div>
-       )}
+            <h2 className="text-3xl font-bold text-white tracking-wide">{t.startOverlayTitle}</h2>
+            <p className="text-sm text-gray-400">{t.startOverlayHint}</p>
+             <button
+               onClick={startGame}
+               className="px-8 py-3 rounded-full bg-white text-black font-bold text-lg tracking-wide hover:scale-105 transition"
+             >
+               {t.startOverlayButton}
+              </button>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
