@@ -3,8 +3,8 @@ import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
 import { 
-  Gamepad2, RotateCcw, Play, PenTool, Download, Upload, 
-  Check, X, Globe, Move, Grid3X3, Trash2
+  Gamepad2, RotateCcw, PenTool, Download, Upload, 
+  Check, Globe, Trash2
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
 
@@ -48,7 +48,6 @@ const App: React.FC = () => {
 
   // --- Editor State ---
   const [editorTool, setEditorTool] = useState<EditorTool>('wall');
-  const [isDrawing, setIsDrawing] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
 
   // --- Audio (Simple Ref) ---
@@ -263,7 +262,7 @@ const App: React.FC = () => {
     let lastMoveTime = 0;
     const MOVE_COOLDOWN = 150; 
 
-    const pollGamepad = (time: number) => {
+    const pollGamepad = () => {
       const gamepads = navigator.getGamepads();
       const gp = gamepads[0]; // Assume P1
       if (gp && mode === 'play') {
