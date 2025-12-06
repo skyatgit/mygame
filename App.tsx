@@ -556,8 +556,8 @@ const App: React.FC = () => {
            {/* Game Info (Play Mode) */}
            {mode === 'play' && (
              <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#333] flex flex-col gap-2">
-                <div className="flex items-center gap-2 border-b border-[#333] pb-1.5">
-                  <div className="px-2 py-1 rounded border border-[#333] bg-[#222] flex items-center justify-center gap-1.5">
+                <div className="flex items-stretch gap-2 border-b border-[#333] pb-1.5">
+                  <div className="flex-1 px-2 py-1 rounded border border-[#333] bg-[#222] flex items-center justify-center gap-1.5">
                     <span className="text-gray-500 text-xs font-bold">{t.moves}</span>
                     <span className="text-white text-sm font-mono">{moveCount}</span>
                   </div>
