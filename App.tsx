@@ -485,9 +485,25 @@ const App: React.FC = () => {
     else if (editorTool === 'light') newLevel.terrain[y][x] = TerrainType.LightTile;
     else if (editorTool === 'dark') newLevel.terrain[y][x] = TerrainType.DarkTile;
     else if (editorTool === 'eraser') newLevel.terrain[y][x] = TerrainType.Void;
-    else if (editorTool === 'p1') newLevel.p1Start = { x, y };
-    else if (editorTool === 'p2') newLevel.p2Start = { x, y };
+    else if (editorTool === 'p1') {
+      if (newLevel.terrain[y][x] !== TerrainType.DarkTile) {
+        playSound('error');
+        return;
+      }
+      newLevel.p1Start = { x, y };
+    }
+    else if (editorTool === 'p2') {
+      if (newLevel.terrain[y][x] !== TerrainType.LightTile) {
+        playSound('error');
+        return;
+      }
+      newLevel.p2Start = { x, y };
+    }
     else if (editorTool === 'target') {
+      if (newLevel.terrain[y][x] === TerrainType.Wall) {
+        playSound('error');
+        return;
+      }
       // Toggle target
       const idx = newLevel.targets.findIndex(t => t.x === x && t.y === y);
       if (idx >= 0) newLevel.targets = newLevel.targets.filter((_, i) => i !== idx);

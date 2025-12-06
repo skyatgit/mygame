@@ -1,5 +1,7 @@
 import React from 'react';
 import { TerrainType, CharacterType, Position } from '../types';
+import PinWhiteSvg from '../assets/pin-white.svg';
+import PinBlackSvg from '../assets/pin-black.svg';
 
 interface BlockProps {
   terrain: TerrainType;
@@ -39,10 +41,12 @@ export const Block: React.FC<BlockProps> = ({
   // P1 (White) sees LightTile as Obstacle (High), DarkTile as Floor (Low)
   // P2 (Black) sees DarkTile as Obstacle (High), LightTile as Floor (Low)
   let isVisualWall = terrain === TerrainType.Wall;
-  if (!editorMode && activeChar) {
-    if (activeChar === CharacterType.P1_White && terrain === TerrainType.LightTile) isVisualWall = true;
-    if (activeChar === CharacterType.P2_Black && terrain === TerrainType.DarkTile) isVisualWall = true;
-  }
+  if (editorMode) {
+    isVisualWall = terrain === TerrainType.Wall;
+  } else if (activeChar) {
+     if (activeChar === CharacterType.P1_White && terrain === TerrainType.LightTile) isVisualWall = true;
+     if (activeChar === CharacterType.P2_Black && terrain === TerrainType.DarkTile) isVisualWall = true;
+   }
 
   // --- 3D Style Helper ---
   const get3DStyle = (
@@ -115,8 +119,20 @@ export const Block: React.FC<BlockProps> = ({
   const FLOOR_BORDER_WIDTH = 0;
   const LAYERS = { floor: 1, target: 2, active: 5 };
 
-  // Decide colors and thickness
-  if (terrain === TerrainType.Wall) {
+  const renderPin = (type: CharacterType) => {
+    const src = type === CharacterType.P1_White ? PinWhiteSvg : PinBlackSvg;
+    return (
+      <div
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        style={{ zIndex: LAYERS.active }}
+      >
+        <img src={src} alt="pin" className="w-[55%] h-[70%]" draggable={false} />
+      </div>
+    );
+  };
+ 
+   // Decide colors and thickness
+   if (terrain === TerrainType.Wall) {
       style = get3DStyle(
         C.Wall.base, C.Wall.top, C.Wall.left, C.Wall.right, C.Wall.bottom, 
         WALL_BORDER_WIDTH, connections
@@ -151,25 +167,25 @@ export const Block: React.FC<BlockProps> = ({
         : { backgroundColor: 'transparent' };
   }
 
-  if (isP1Here && activeChar !== CharacterType.P1_White) {
-    style = get3DStyle(
-      C.LightFloor.base,
-      C.LightFloor.top,
-      C.LightFloor.left,
-      C.LightFloor.right,
-      C.LightFloor.bottom,
-      FLOOR_BORDER_WIDTH
-    );
-  } else if (isP2Here && activeChar !== CharacterType.P2_Black) {
-    style = get3DStyle(
-      C.DarkFloor.base,
-      C.DarkFloor.top,
-      C.DarkFloor.left,
-      C.DarkFloor.right,
-      C.DarkFloor.bottom,
-      FLOOR_BORDER_WIDTH
-    );
-  }
+  if (!editorMode && isP1Here && activeChar !== CharacterType.P1_White) {
+     style = get3DStyle(
+       C.LightFloor.base,
+       C.LightFloor.top,
+       C.LightFloor.left,
+       C.LightFloor.right,
+       C.LightFloor.bottom,
+       FLOOR_BORDER_WIDTH
+     );
+  } else if (!editorMode && isP2Here && activeChar !== CharacterType.P2_Black) {
+     style = get3DStyle(
+       C.DarkFloor.base,
+       C.DarkFloor.top,
+       C.DarkFloor.left,
+       C.DarkFloor.right,
+       C.DarkFloor.bottom,
+       FLOOR_BORDER_WIDTH
+     );
+   }
 
   const tileZIndex = isVisualWall ? 2 : 0;
   style = { ...style, zIndex: tileZIndex };
@@ -232,10 +248,13 @@ export const Block: React.FC<BlockProps> = ({
 
   // --- Character Rendering ---
   const renderCharacter = (type: CharacterType) => {
-    const isActive = activeChar === type;
-    const palette = type === CharacterType.P1_White ? C.LightWall : C.DarkWall;
-    const eyeColorClass = type === CharacterType.P1_White ? 'bg-black' : 'bg-white';
-    const layer = isActive ? LAYERS.active : LAYERS.floor;
+    if (editorMode) {
+      return renderPin(type);
+    }
+     const isActive = activeChar === type;
+     const palette = type === CharacterType.P1_White ? C.LightWall : C.DarkWall;
+     const eyeColorClass = type === CharacterType.P1_White ? 'bg-black' : 'bg-white';
+     const layer = isActive ? LAYERS.active : LAYERS.floor;
 
     const renderEyes = (size: string) => (
       <div className="absolute top-[30%] left-0 right-0 flex justify-center gap-[20%]">
@@ -244,7 +263,7 @@ export const Block: React.FC<BlockProps> = ({
       </div>
     );
 
-    if (!isActive) {
+    if (!isActive && !editorMode) {
       const floorPalette = type === CharacterType.P1_White ? C.LightFloor : C.DarkFloor;
       return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: layer }}>
@@ -264,7 +283,7 @@ export const Block: React.FC<BlockProps> = ({
         </div>
       );
     }
-
+ 
     return (
       <div
         className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
@@ -286,7 +305,7 @@ export const Block: React.FC<BlockProps> = ({
               : '0 4px 10px rgba(0,0,0,0.4)'
           }}
         >
-          {renderEyes('w-[16%]')}
+          {renderEyes(isActive ? 'w-[16%]' : 'w-[14%]')}
         </div>
       </div>
     );

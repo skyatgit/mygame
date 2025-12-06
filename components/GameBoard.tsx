@@ -86,7 +86,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       >
         {level.terrain.map((row, y) => (
           row.map((baseTerrain, x) => {
-            const terrain = getEffectiveTerrain(level, gameState, x, y);
+            const terrain = getEffectiveTerrain(level, editorMode ? undefined : gameState, x, y);
             const targetIndex = level.targets.findIndex(t => t.x === x && t.y === y);
             const isTarget = targetIndex >= 0;
             const isTargetCollected = isTarget ? collectedTargets[targetIndex] : false;
