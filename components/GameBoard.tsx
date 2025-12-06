@@ -57,7 +57,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const tileSize = useMemo(() => {
     if (!viewportSize.width || !viewportSize.height) return editorMode ? 36 : 48;
-    const padding = 48;
+    const padding = 0;
     const availableWidth = Math.max(viewportSize.width - padding, 0);
     const availableHeight = Math.max(viewportSize.height - padding, 0);
     const sizeByWidth = availableWidth / level.width;
@@ -69,9 +69,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardHeight = level.height * tileSize;
 
    return (
-    <div 
+    <div
       ref={containerRef}
-      className="flex bg-[#050505] p-6 rounded-xl shadow-2xl select-none w-full h-full"
+      className="flex select-none w-full h-full"
       style={{ minWidth: 0, minHeight: 0 }}
       onMouseLeave={() => {}}
     >
