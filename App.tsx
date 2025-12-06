@@ -606,56 +606,63 @@ const App: React.FC = () => {
 
            {/* Editor Tools (Edit Mode) */}
            {mode === 'edit' && (
-             <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#333] flex flex-col gap-2 animate-in fade-in slide-in-from-left-4">
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.width} / {t.height}</div>
-                <div className="flex gap-2">
-                   <div className="flex items-center gap-1.5 bg-[#222] px-1.5 rounded text-sm">
-                      <span className="text-gray-500 text-xs">W</span>
-                      <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="px-1 hover:text-white">-</button>
-                      <span className="font-mono w-4 text-center text-xs">{currentLevel.width}</span>
-                      <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="px-1 hover:text-white">+</button>
-                   </div>
-                   <div className="flex items-center gap-1.5 bg-[#222] px-1.5 rounded text-sm">
-                      <span className="text-gray-500 text-xs">H</span>
-                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="px-1 hover:text-white">-</button>
-                      <span className="font-mono w-4 text-center text-xs">{currentLevel.height}</span>
-                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="px-1 hover:text-white">+</button>
+             <div className="bg-[#1a1a1a] p-2 rounded-lg border border-[#333] flex flex-col gap-1.5 animate-in fade-in slide-in-from-left-4">
+                <div className="flex items-center justify-between gap-2">
+                   <span className="text-[10px] font-bold text-gray-500 uppercase">{t.width}/{t.height}</span>
+                   <div className="flex gap-1.5">
+                      <div className="flex items-center gap-1 bg-[#222] px-1.5 py-0.5 rounded text-xs">
+                         <span className="text-gray-500 text-[10px]">W</span>
+                         <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="px-0.5 hover:text-white text-xs">-</button>
+                         <span className="font-mono w-3 text-center text-[10px]">{currentLevel.width}</span>
+                         <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="px-0.5 hover:text-white text-xs">+</button>
+                      </div>
+                      <div className="flex items-center gap-1 bg-[#222] px-1.5 py-0.5 rounded text-xs">
+                         <span className="text-gray-500 text-[10px]">H</span>
+                         <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="px-0.5 hover:text-white text-xs">-</button>
+                         <span className="font-mono w-3 text-center text-[10px]">{currentLevel.height}</span>
+                         <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="px-0.5 hover:text-white text-xs">+</button>
+                      </div>
                    </div>
                 </div>
 
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">{t.tools}</div>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="text-[10px] font-bold text-gray-500 uppercase">{t.tools}</div>
+                <div className="grid grid-cols-4 gap-1">
                    {[
                      { id: 'wall', label: t.toolLabels.wall, color: 'bg-neutral-800' },
+                     { id: 'target', label: t.toolLabels.target, color: 'bg-green-900 text-green-400 border border-green-700' },
                      { id: 'eraser', label: t.toolLabels.eraser, color: 'bg-neutral-900 border border-red-900/50 text-red-500', icon: Trash2 },
+                     { id: 'spacer', label: '', color: '' },
                      { id: 'light', label: t.toolLabels.light, color: 'bg-gray-200 text-black' },
                      { id: 'dark', label: t.toolLabels.dark, color: 'bg-black border border-gray-700' },
                      { id: 'p1', label: t.toolLabels.p1, color: 'bg-white text-black border border-gray-400' },
                      { id: 'p2', label: t.toolLabels.p2, color: 'bg-black text-white border border-gray-600' },
-                     { id: 'target', label: t.toolLabels.target, color: 'bg-green-900 text-green-400 border border-green-700' },
                    ].map((tool) => (
-                      <button
-                        key={tool.id}
-                        onClick={() => setEditorTool(tool.id as EditorTool)}
-                        className={`p-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-2 ${
-                          editorTool === tool.id
-                            ? 'border-yellow-500 scale-105 shadow-lg'
-                            : 'border-transparent opacity-70 hover:opacity-100'
-                        } ${tool.color}`}
-                      >
-                         {tool.icon && <tool.icon size={11} />}
-                         {tool.label}
-                      </button>
+                      tool.id === 'spacer' ? (
+                        <div key={tool.id}></div>
+                      ) : (
+                        <button
+                          key={tool.id}
+                          onClick={() => setEditorTool(tool.id as EditorTool)}
+                          className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition-all border-2 ${
+                            editorTool === tool.id
+                              ? 'border-yellow-500 scale-105 shadow-lg'
+                              : 'border-transparent opacity-70 hover:opacity-100'
+                          } ${tool.color}`}
+                        >
+                           {tool.icon && <tool.icon size={10} />}
+                           {tool.label}
+                        </button>
+                      )
                    ))}
                 </div>
 
-                <div className="flex gap-2 mt-2 pt-2 border-t border-[#333]">
-                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1.5 rounded text-xs flex items-center justify-center gap-1">
-                      {copyFeedback ? <Check size={11} className="text-green-500"/> : <Download size={11}/>}
+                <div className="flex gap-1.5 mt-1 pt-1.5 border-t border-[#333]">
+                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1 rounded text-[10px] flex items-center justify-center gap-1">
+                      {copyFeedback ? <Check size={10} className="text-green-500"/> : <Download size={10}/>}
                       {copyFeedback ? t.copied : t.export}
                    </button>
-                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1.5 rounded text-xs flex items-center justify-center gap-1">
-                      <Upload size={11}/> {t.import}
+                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1 rounded text-[10px] flex items-center justify-center gap-1">
+                      <Upload size={10}/> {t.import}
                    </button>
                 </div>
              </div>
