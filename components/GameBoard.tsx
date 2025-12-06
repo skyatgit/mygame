@@ -85,31 +85,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }}
       >
         {level.terrain.map((row, y) => (
-          row.map((baseTerrain, x) => {
+          row.map((_, x) => {
             const terrain = getEffectiveTerrain(level, editorMode ? undefined : gameState, x, y);
             const targetIndex = level.targets.findIndex(t => t.x === x && t.y === y);
             const isTarget = targetIndex >= 0;
             const isTargetCollected = isTarget ? collectedTargets[targetIndex] : false;
-            
-            // Get the exact type of the current block
-            const connections = { top: false, bottom: false, left: false, right: false };
-            const innerCorners = { tl: false, tr: false, bl: false, br: false };
 
             return (
               <div 
                 key={`${x}-${y}`} 
                 className="aspect-square w-full"
               >
-                <Block 
-                   x={x} 
+                <Block
+                   x={x}
                    y={y}
                    terrain={terrain}
                    p1Pos={p1Pos}
                    p2Pos={p2Pos}
                    activeChar={activeChar}
                    isTarget={isTarget && !isTargetCollected}
-                   connections={connections}
-                   innerCorners={innerCorners}
                    editorMode={editorMode}
                    onBlockClick={onBlockClick}
                    tileSize={tileSize}

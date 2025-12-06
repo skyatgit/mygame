@@ -2,29 +2,13 @@ import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from
 import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
-import { 
-  Gamepad2, RotateCcw, PenTool, Download, Upload, 
+import {
+  Gamepad2, RotateCcw, PenTool, Download, Upload,
   Check, Globe, Trash2
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
-
-type DirectionKey = 'up' | 'down' | 'left' | 'right';
-type DirectionVector = { key: DirectionKey; dx: number; dy: number };
-
-const KEYBOARD_DIRECTION_MAP: Record<string, DirectionVector> = {
-  ArrowUp: { key: 'up', dx: 0, dy: -1 },
-  w: { key: 'up', dx: 0, dy: -1 },
-  W: { key: 'up', dx: 0, dy: -1 },
-  ArrowDown: { key: 'down', dx: 0, dy: 1 },
-  s: { key: 'down', dx: 0, dy: 1 },
-  S: { key: 'down', dx: 0, dy: 1 },
-  ArrowLeft: { key: 'left', dx: -1, dy: 0 },
-  a: { key: 'left', dx: -1, dy: 0 },
-  A: { key: 'left', dx: -1, dy: 0 },
-  ArrowRight: { key: 'right', dx: 1, dy: 0 },
-  d: { key: 'right', dx: 1, dy: 0 },
-  D: { key: 'right', dx: 1, dy: 0 }
-};
+import { useAudio } from './hooks/useAudio';
+import { KEYBOARD_DIRECTION_MAP, GAME_CONFIG, DirectionKey, DirectionVector } from './gameConfig';
 
 const computeCollectedTargets = (level: LevelData, p1: Position, p2: Position) =>
   level.targets.map(t => (t.x === p1.x && t.y === p1.y) || (t.x === p2.x && t.y === p2.y));
@@ -56,47 +40,24 @@ const App: React.FC = () => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
+  // --- Audio ---
+  const { unlockAudio, playSound } = useAudio();
+  const [hasStarted, setHasStarted] = useState(false);
+
   useEffect(() => {
     if (prevActiveCharRef.current === null) {
       prevActiveCharRef.current = gameState.activeChar;
       return;
     }
     if (prevActiveCharRef.current !== gameState.activeChar) {
-      initAudio();
       playSound('switch');
     }
     prevActiveCharRef.current = gameState.activeChar;
-  }, [gameState.activeChar]);
+  }, [gameState.activeChar, playSound]);
 
   // --- Editor State ---
   const [editorTool, setEditorTool] = useState<EditorTool>('wall');
   const [copyFeedback, setCopyFeedback] = useState(false);
-
-  // --- Audio (Simple Ref) ---
-  const audioCtx = useRef<AudioContext | null>(null);
-  const audioUnlockedRef = useRef(false);
-  const [hasStarted, setHasStarted] = useState(false);
-
-  const ensureAudioContext = useCallback(() => {
-    if (!audioCtx.current) {
-      audioCtx.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-    return audioCtx.current;
-  }, []);
-
-  const unlockAudio = useCallback(() => {
-    const ctx = ensureAudioContext();
-    if (!ctx) return Promise.resolve();
-
-    if (ctx.state === 'suspended') {
-      return ctx.resume().then(() => {
-        audioUnlockedRef.current = ctx.state === 'running';
-      });
-    }
-
-    audioUnlockedRef.current = ctx.state === 'running';
-    return Promise.resolve();
-  }, [ensureAudioContext]);
 
   const startGame = useCallback(() => {
     if (hasStarted) return;
@@ -119,65 +80,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleStartHotkey);
   }, [hasStarted, startGame]);
 
-  // Initialize Audio Context on interaction
-  const initAudio = useCallback(() => {
-    unlockAudio();
-  }, [unlockAudio]);
-
-  const playSound = (type: 'move' | 'switch' | 'win' | 'error' | 'collect') => {
-    const ctx = ensureAudioContext();
-    if (!ctx) return;
-
-    if (!audioUnlockedRef.current || ctx.state !== 'running') return;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    const now = ctx.currentTime;
-    
-    if (type === 'move') {
-      osc.frequency.setValueAtTime(200, now);
-      osc.frequency.exponentialRampToValueAtTime(50, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-      osc.start(now);
-      osc.stop(now + 0.1);
-    } else if (type === 'switch') {
-      osc.frequency.setValueAtTime(400, now);
-      osc.frequency.linearRampToValueAtTime(600, now + 0.1);
-      gain.gain.setValueAtTime(0.1, now);
-      gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-      osc.start(now);
-      osc.stop(now + 0.15);
-    } else if (type === 'win') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(554, now + 0.1);
-      osc.frequency.setValueAtTime(659, now + 0.2);
-      gain.gain.setValueAtTime(0.2, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-      osc.start(now);
-      osc.stop(now + 0.6);
-    } else if (type === 'collect') {
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.linearRampToValueAtTime(660, now + 0.08);
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.02, now + 0.18);
-      osc.start(now);
-      osc.stop(now + 0.18);
-    } else if (type === 'error') {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(90, now);
-      osc.frequency.linearRampToValueAtTime(60, now + 0.15);
-      gain.gain.setValueAtTime(0.12, now);
-      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.2);
-      osc.start(now);
-      osc.stop(now + 0.2);
-    }
-  };
-
   const gamepadButtonStateRef = useRef({ start: false, switch: false, reset: false });
   const lastGamepadMoveTimeRef = useRef(0);
   const suppressGamepadSwitchRef = useRef(false);
@@ -187,87 +89,82 @@ const App: React.FC = () => {
   const keyboardRepeatIntervalRef = useRef<number | null>(null);
   const lastKeyboardSwitchTimeRef = useRef(0);
   const keyboardSwitchHeldRef = useRef(false);
-  const MOVE_COOLDOWN_MS = 280;
-  const SWITCH_COOLDOWN_MS = 200;
   const lastGamepadDirectionRef = useRef<DirectionKey | null>(null);
- 
+
   const handleMove = useCallback((dx: number, dy: number) => {
     if (isWon || mode === 'edit' || !hasStarted) return;
-    initAudio();
+
+    const { activeChar, p1Pos, p2Pos } = gameStateRef.current;
+    const currentPos = activeChar === CharacterType.P1_White ? p1Pos : p2Pos;
+    const targetX = currentPos.x + dx;
+    const targetY = currentPos.y + dy;
+
+    // 1. Boundary Check
+    if (targetX < 0 || targetX >= currentLevel.width || targetY < 0 || targetY >= currentLevel.height) {
+      return;
+    }
+
+    // 2. Terrain Check
+    const targetTerrain = getEffectiveTerrain(currentLevel, gameStateRef.current, targetX, targetY);
+    if (targetTerrain === TerrainType.Wall || targetTerrain === TerrainType.Void) {
+      return;
+    }
+
+    // 3. Color Logic & "Be the Path"
+    const isP1Active = activeChar === CharacterType.P1_White;
+    const otherCharPos = isP1Active ? p2Pos : p1Pos;
+    const isOtherCharAtTarget = otherCharPos.x === targetX && otherCharPos.y === targetY;
+
+    let canMove = false;
+
+    if (isP1Active) {
+      const isDarkTile = targetTerrain === TerrainType.DarkTile;
+      if (isDarkTile || isOtherCharAtTarget) {
+        canMove = true;
+      }
+    } else {
+      const isLightTile = targetTerrain === TerrainType.LightTile;
+      if (isLightTile || isOtherCharAtTarget) {
+        canMove = true;
+      }
+    }
+
+    if (!canMove) return;
+
+    // 执行移动
+    playSound('move');
+    setMoveCount(c => c + 1);
+
+    const nextP1 = isP1Active ? { x: targetX, y: targetY } : p1Pos;
+    const nextP2 = !isP1Active ? { x: targetX, y: targetY } : p2Pos;
 
     setGameState(prev => {
-      const { activeChar, p1Pos, p2Pos } = prev;
-      const currentPos = activeChar === CharacterType.P1_White ? p1Pos : p2Pos;
-      const targetX = currentPos.x + dx;
-      const targetY = currentPos.y + dy;
+      const nextCollected = [...prev.collectedTargets];
+      const playerHit = isP1Active ? nextP1 : nextP2;
+      const previouslyCollected = nextCollected.filter(Boolean).length;
+      let newlyCollected = 0;
 
-      // 1. Boundary Check
-      if (targetX < 0 || targetX >= currentLevel.width || targetY < 0 || targetY >= currentLevel.height) {
-        return prev;
-      }
-
-      // 2. Terrain Check
-      const targetTerrain = getEffectiveTerrain(currentLevel, prev, targetX, targetY);
-      if (targetTerrain === TerrainType.Wall || targetTerrain === TerrainType.Void) {
-        return prev;
-      }
-
-      // 3. Color Logic & "Be the Path"
-      const isP1Active = activeChar === CharacterType.P1_White;
-      const otherCharPos = isP1Active ? p2Pos : p1Pos;
-      const isOtherCharAtTarget = otherCharPos.x === targetX && otherCharPos.y === targetY;
-
-      let canMove = false;
-
-      if (isP1Active) {
-        // P1 (White) needs Dark Tile OR Inactive P2 (Black acts as Dark)
-        const isDarkTile = targetTerrain === TerrainType.DarkTile;
-        if (isDarkTile || isOtherCharAtTarget) {
-          canMove = true;
+      currentLevel.targets.forEach((t, i) => {
+        if (!nextCollected[i] && playerHit.x === t.x && playerHit.y === t.y) {
+          nextCollected[i] = true;
+          newlyCollected++;
         }
-      } else {
-        // P2 (Black) needs Light Tile OR Inactive P1 (White acts as Light)
-        const isLightTile = targetTerrain === TerrainType.LightTile;
-        if (isLightTile || isOtherCharAtTarget) {
-          canMove = true;
-        }
+      });
+
+      const totalTargets = currentLevel.targets.length;
+      const willCompleteLevel = totalTargets > 0 && previouslyCollected + newlyCollected === totalTargets;
+      if (newlyCollected > 0 && !willCompleteLevel) {
+        playSound('collect');
       }
 
-      if (canMove) {
-        playSound('move');
-        setMoveCount(c => c + 1);
-        const nextP1 = isP1Active ? { x: targetX, y: targetY } : p1Pos;
-        const nextP2 = !isP1Active ? { x: targetX, y: targetY } : p2Pos;
-        const nextCollected = [...prev.collectedTargets];
-        const playerHit = isP1Active ? nextP1 : nextP2;
-        const previouslyCollected = nextCollected.filter(Boolean).length;
-        let newlyCollected = 0;
-
-        currentLevel.targets.forEach((t, i) => {
-          if (!nextCollected[i] && playerHit.x === t.x && playerHit.y === t.y) {
-            nextCollected[i] = true;
-            newlyCollected++;
-          }
-        });
-
-        const totalTargets = currentLevel.targets.length;
-        const willCompleteLevel = totalTargets > 0 && previouslyCollected + newlyCollected === totalTargets;
-        if (newlyCollected > 0 && !willCompleteLevel) {
-          // Avoid overlapping collect + win sounds by only playing collect mid-level
-          playSound('collect');
-        }
-        return {
-          ...prev,
-          p1Pos: nextP1,
-          p2Pos: nextP2,
-          collectedTargets: nextCollected,
-        };
-      } else {
-        // Optional: Bump animation or sound?
-        return prev;
-      }
+      return {
+        ...prev,
+        p1Pos: nextP1,
+        p2Pos: nextP2,
+        collectedTargets: nextCollected,
+      };
     });
-  }, [currentLevel, hasStarted, initAudio, isWon, mode, playSound]);
+  }, [currentLevel, hasStarted, isWon, mode, playSound]);
 
   const stopKeyboardRepeat = useCallback(() => {
     if (keyboardRepeatIntervalRef.current !== null) {
@@ -285,8 +182,8 @@ const App: React.FC = () => {
         return;
       }
       handleMove(activeDir.dx, activeDir.dy);
-    }, MOVE_COOLDOWN_MS);
-  }, [handleMove, hasStarted, mode, MOVE_COOLDOWN_MS, stopKeyboardRepeat]);
+    }, GAME_CONFIG.MOVE_COOLDOWN_MS);
+  }, [handleMove, hasStarted, mode, stopKeyboardRepeat]);
 
   useEffect(() => {
     return () => stopKeyboardRepeat();
@@ -322,7 +219,6 @@ const App: React.FC = () => {
 
   const handleSwitch = useCallback(() => {
     if (isWon || mode === 'edit' || !hasStarted) return;
-    initAudio();
 
     const overlapping =
       gameStateRef.current.p1Pos.x === gameStateRef.current.p2Pos.x &&
@@ -345,7 +241,7 @@ const App: React.FC = () => {
           : CharacterType.P1_White
       };
     });
-  }, [hasStarted, initAudio, isWon, mode, playSound]);
+  }, [hasStarted, isWon, mode, playSound]);
 
   // --- Input Handlers ---
   useEffect(() => {
@@ -368,7 +264,7 @@ const App: React.FC = () => {
       }
       switch (e.key) {
         case ' ': case 'Enter': case 'e': case 'E':
-          if (!keyboardSwitchHeldRef.current && now - lastKeyboardSwitchTimeRef.current >= SWITCH_COOLDOWN_MS) {
+          if (!keyboardSwitchHeldRef.current && now - lastKeyboardSwitchTimeRef.current >= GAME_CONFIG.SWITCH_COOLDOWN_MS) {
             handleSwitch();
             lastKeyboardSwitchTimeRef.current = now;
             keyboardSwitchHeldRef.current = true;
@@ -446,16 +342,17 @@ const App: React.FC = () => {
          const now = performance.now();
  
          const activeDirection: DirectionVector | null = (() => {
-           if (axisY < -0.5 || dpadUp) return { key: 'up', dx: 0, dy: -1 };
-           if (axisY > 0.5 || dpadDown) return { key: 'down', dx: 0, dy: 1 };
-           if (axisX < -0.5 || dpadLeft) return { key: 'left', dx: -1, dy: 0 };
-           if (axisX > 0.5 || dpadRight) return { key: 'right', dx: 1, dy: 0 };
+           const threshold = GAME_CONFIG.GAMEPAD_AXIS_THRESHOLD;
+           if (axisY < -threshold || dpadUp) return { key: 'up', dx: 0, dy: -1 };
+           if (axisY > threshold || dpadDown) return { key: 'down', dx: 0, dy: 1 };
+           if (axisX < -threshold || dpadLeft) return { key: 'left', dx: -1, dy: 0 };
+           if (axisX > threshold || dpadRight) return { key: 'right', dx: 1, dy: 0 };
            return null;
          })();
  
          if (activeDirection) {
            const isContinuous = lastGamepadDirectionRef.current === activeDirection.key;
-           if (!isContinuous || now - lastGamepadMoveTimeRef.current >= MOVE_COOLDOWN_MS) {
+           if (!isContinuous || now - lastGamepadMoveTimeRef.current >= GAME_CONFIG.MOVE_COOLDOWN_MS) {
              handleMove(activeDirection.dx, activeDirection.dy);
              lastGamepadMoveTimeRef.current = now;
            }
@@ -470,7 +367,7 @@ const App: React.FC = () => {
      };
      animationFrameId = requestAnimationFrame(pollGamepad);
      return () => cancelAnimationFrame(animationFrameId);
-   }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame, MOVE_COOLDOWN_MS]);
+   }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame]);
 
 
   // --- Editor Logic ---
