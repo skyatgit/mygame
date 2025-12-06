@@ -104,42 +104,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isTargetCollected = isTarget ? collectedTargets[targetIndex] : false;
             
             // Get the exact type of the current block
-            const currentWallType = getVisualWallType(x, y);
-            const isHereWall = currentWallType !== null;
-
-            // Calculate connections
-            // We only connect if the neighbor is the EXACT SAME type of wall.
-            let connections = { top: false, bottom: false, left: false, right: false };
-            let innerCorners = { tl: false, tr: false, bl: false, br: false };
-
-            if (isHereWall) {
-                const topType = getVisualWallType(x, y - 1);
-                const bottomType = getVisualWallType(x, y + 1);
-                const leftType = getVisualWallType(x - 1, y);
-                const rightType = getVisualWallType(x + 1, y);
-                
-                connections = { 
-                  top: topType === currentWallType, 
-                  bottom: bottomType === currentWallType, 
-                  left: leftType === currentWallType, 
-                  right: rightType === currentWallType 
-                };
-
-                // Calculate diagonal neighbors for Inner Corners
-                // An inner corner exists if two adjacent sides are connected (same wall type),
-                // but the diagonal neighbor is NOT that same wall type (forming a concave corner).
-                const tlType = getVisualWallType(x - 1, y - 1);
-                const trType = getVisualWallType(x + 1, y - 1);
-                const blType = getVisualWallType(x - 1, y + 1);
-                const brType = getVisualWallType(x + 1, y + 1);
-
-                innerCorners = {
-                  tl: connections.top && connections.left && tlType !== currentWallType,
-                  tr: connections.top && connections.right && trType !== currentWallType,
-                  bl: connections.bottom && connections.left && blType !== currentWallType,
-                  br: connections.bottom && connections.right && brType !== currentWallType
-                };
-            }
+            const connections = { top: false, bottom: false, left: false, right: false };
+            const innerCorners = { tl: false, tr: false, bl: false, br: false };
 
             return (
               <div 

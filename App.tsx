@@ -56,22 +56,66 @@ const App: React.FC = () => {
 
   // --- Audio (Simple Ref) ---
   const audioCtx = useRef<AudioContext | null>(null);
+  const audioUnlockedRef = useRef(false);
+  const [hasStarted, setHasStarted] = useState(false);
 
-  // Initialize Audio Context on interaction
-  const initAudio = () => {
+  const ensureAudioContext = useCallback(() => {
     if (!audioCtx.current) {
       audioCtx.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-  };
+    return audioCtx.current;
+  }, []);
+
+  const unlockAudio = useCallback(() => {
+    const ctx = ensureAudioContext();
+    if (!ctx) return Promise.resolve();
+
+    if (ctx.state === 'suspended') {
+      return ctx.resume().then(() => {
+        audioUnlockedRef.current = ctx.state === 'running';
+      });
+    }
+
+    audioUnlockedRef.current = ctx.state === 'running';
+    return Promise.resolve();
+  }, [ensureAudioContext]);
+
+  const startGame = useCallback(() => {
+    if (hasStarted) return;
+    unlockAudio().finally(() => setHasStarted(true));
+  }, [hasStarted, unlockAudio]);
+
+  useEffect(() => {
+    if (hasStarted) return;
+
+    const handleStartHotkey = (event: KeyboardEvent) => {
+      if (event.key === 'e' || event.key === 'E') {
+        event.preventDefault();
+        startGame();
+      }
+    };
+
+    window.addEventListener('keydown', handleStartHotkey);
+    return () => window.removeEventListener('keydown', handleStartHotkey);
+  }, [hasStarted, startGame]);
+
+  // Initialize Audio Context on interaction
+  const initAudio = useCallback(() => {
+    unlockAudio();
+  }, [unlockAudio]);
 
   const playSound = (type: 'move' | 'switch' | 'win' | 'error' | 'collect') => {
-    if (!audioCtx.current) return;
-    const osc = audioCtx.current.createOscillator();
-    const gain = audioCtx.current.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.current.destination);
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
 
-    const now = audioCtx.current.currentTime;
+    if (!audioUnlockedRef.current || ctx.state !== 'running') return;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    const now = ctx.currentTime;
     
     if (type === 'move') {
       osc.frequency.setValueAtTime(200, now);
@@ -136,7 +180,7 @@ const App: React.FC = () => {
   }, [collectedCount, currentLevel.targets.length]);
 
   const handleMove = useCallback((dx: number, dy: number) => {
-    if (isWon || mode === 'edit') return;
+    if (isWon || mode === 'edit' || !hasStarted) return;
     initAudio();
 
     setGameState(prev => {
@@ -211,10 +255,10 @@ const App: React.FC = () => {
         return prev;
       }
     });
-  }, [currentLevel, isWon, mode]);
+  }, [currentLevel, hasStarted, initAudio, isWon, mode, playSound]);
 
   const handleSwitch = useCallback(() => {
-    if (isWon || mode === 'edit') return;
+    if (isWon || mode === 'edit' || !hasStarted) return;
     initAudio();
 
     const overlapping =
@@ -238,7 +282,7 @@ const App: React.FC = () => {
           : CharacterType.P1_White
       };
     });
-  }, [isWon, mode]);
+  }, [hasStarted, initAudio, isWon, mode, playSound]);
 
   // --- Input Handlers ---
   useEffect(() => {
@@ -261,7 +305,7 @@ const App: React.FC = () => {
   // Gamepad Loop
   useEffect(() => {
     let animationFrameId: number;
-    let lastButtonState = { switch: false, reset: false, up: false, down: false, left: false, right: false };
+    let lastButtonState = { start: false, switch: false, reset: false, up: false, down: false, left: false, right: false };
     // Cooldown for d-pad/sticks to prevent zooming
     let lastMoveTime = 0;
     const MOVE_COOLDOWN = 150; 
@@ -270,13 +314,20 @@ const App: React.FC = () => {
       const gamepads = navigator.getGamepads();
       const gp = gamepads[0]; // Assume P1
       if (gp && mode === 'play') {
-        // Buttons: 0 (A/Cross), 1 (B/Circle), 2 (X/Square), 3 (Y/Triangle)
-        // Let's say Button 0 or 3 switches.
-        const btnSwitch = gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[2].pressed || gp.buttons[3].pressed;
-        const btnReset = gp.buttons[8].pressed || gp.buttons[9].pressed; // Select/Start often
-        
-        if (btnSwitch && !lastButtonState.switch) handleSwitch();
-        if (btnReset && !lastButtonState.reset) resetGame();
+        const btnStart = gp.buttons[0]?.pressed ?? false;
+        if (!hasStarted) {
+          if (btnStart && !lastButtonState.start) startGame();
+          lastButtonState = { ...lastButtonState, start: btnStart };
+          animationFrameId = requestAnimationFrame(pollGamepad);
+          return;
+        }
+         // Buttons: 0 (A/Cross), 1 (B/Circle), 2 (X/Square), 3 (Y/Triangle)
+         // Let's say Button 0 or 3 switches.
+         const btnSwitch = gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[2].pressed || gp.buttons[3].pressed;
+         const btnReset = gp.buttons[8].pressed || gp.buttons[9].pressed; // Select/Start often
+ 
+         if (btnSwitch && !lastButtonState.switch) handleSwitch();
+         if (btnReset && !lastButtonState.reset) resetGame();
 
         // D-Pad / Stick
         // Axes: 0 (Left Stick X), 1 (Left Stick Y)
@@ -295,9 +346,9 @@ const App: React.FC = () => {
             else if (axisX > 0.5 || dpadRight) { handleMove(1, 0); lastMoveTime = now; }
         }
 
-        lastButtonState = { ...lastButtonState, switch: btnSwitch, reset: btnReset };
-      }
-      animationFrameId = requestAnimationFrame(pollGamepad);
+        lastButtonState = { ...lastButtonState, start: btnStart, switch: btnSwitch, reset: btnReset };
+       }
+       animationFrameId = requestAnimationFrame(pollGamepad);
     };
     animationFrameId = requestAnimationFrame(pollGamepad);
     return () => cancelAnimationFrame(animationFrameId);
@@ -529,16 +580,16 @@ const App: React.FC = () => {
 
         {/* Center: Game Board */}
         <div className="flex-1 flex flex-col items-center justify-center relative bg-[#0a0a0a] rounded-xl border border-[#222] shadow-inner p-4 overflow-hidden">
-           
-           <GameBoard 
-             level={currentLevel} 
-             gameState={gameState} 
-             editorMode={mode === 'edit'}
-             collectedTargets={gameState.collectedTargets}
-             onBlockClick={handleEditorClick}
-             editorP1Start={currentLevel.p1Start}
-             editorP2Start={currentLevel.p2Start}
-           />
+            
+            <GameBoard 
+              level={currentLevel} 
+              gameState={gameState} 
+              editorMode={mode === 'edit'}
+              collectedTargets={gameState.collectedTargets}
+              onBlockClick={handleEditorClick}
+              editorP1Start={currentLevel.p1Start}
+              editorP2Start={currentLevel.p2Start}
+            />
 
            {/* Win Overlay */}
            {isWon && (
@@ -567,9 +618,24 @@ const App: React.FC = () => {
                 <RotateCcw className="text-white" />
               </button>
            </div>
-        </div>
+         </div>
 
       </div>
+
+      {!hasStarted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#1b1b1b] border border-white/10 rounded-2xl px-8 py-10 text-center space-y-6 shadow-2xl">
+            <h2 className="text-3xl font-bold text-white tracking-wide">准备好开始了吗？</h2>
+            <p className="text-sm text-gray-400">点击按钮或使用键盘 E / 手柄 A 即可开始游戏。</p>
+            <button
+              onClick={startGame}
+              className="px-8 py-3 rounded-full bg-white text-black font-bold text-lg tracking-wide hover:scale-105 transition"
+            >
+               开始游戏
+             </button>
+           </div>
+         </div>
+       )}
     </div>
   );
 };
