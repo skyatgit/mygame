@@ -15,11 +15,11 @@ export const BLOCK_COLORS = {
     bottom: '#f7f7f4'
   },
   LightWall: {
-    base: '#f4f5f7',
+    base: '#f7f7f4',
     top: '#ffffff',
-    left: '#c1c8da',
-    right: '#b7bfd2',
-    bottom: '#8e95aa'
+    left: '#d8d8d5',
+    right: '#c0c0bd',
+    bottom: '#a0a09d'
   },
   DarkFloor: {
     base: '#1a1a1f',
@@ -29,11 +29,11 @@ export const BLOCK_COLORS = {
     bottom: '#1a1a1f'
   },
   DarkWall: {
-    base: '#2d3241',
-    top: '#939bad',
-    left: '#2d3241',
-    right: '#191c26',
-    bottom: '#11131a'
+    base: '#1a1a1f',
+    top: '#3a3a3f',
+    left: '#1a1a1f',
+    right: '#0d0d12',
+    bottom: '#000005'
   },
   Void: {
     base: '#111',
