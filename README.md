@@ -1,20 +1,110 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Duality Paradox
 
-# Run and deploy your AI Studio app
+一款以“黑白角色互为道路”为核心机制的益智游戏，支持键鼠、手柄双输入，并内置关卡编辑器，可实时设计、导出及测试自定义地图。
 
-This contains everything you need to run your app locally.
+## 功能概览
 
-View your app in AI Studio: https://ai.studio/apps/drive/127XO2GnqtDT5KjnyhF4GYD3VrJnU95H8
+- **黑白双角色玩法**：白方仅能行走在黑色地块/黑方位置；黑方仅能行走在白色地块/白方位置。
+- **可收集目标**：角色触碰目标即可拾取，所有目标收集完毕即通关。
+- **音效与提示**：移动、切换、拾取、胜利等操作均有独立提示音，防止声音互相覆盖。
+- **输入支持**：
+  - 键盘 WASD / 方向键移动，空格或 Enter / E 切换角色，R 重置。
+  - 手柄左摇杆 / 十字键移动，A 启动游戏与切换角色，Select/Start 重置。
+- **关卡编辑器**：
+  - 笔刷支持墙、黑地、白地、橡皮擦以及角色/目标放置。
+  - 拖拽绘制，自动处理角色脚下地块合法性、目标与墙的冲突。
+  - 支持导入/导出 JSON。
+- **自适应画面**：舞台尺寸、地图缩放随窗口变化自动调整。
+- **多语言**：目前提供中文/英文切换，同时自动同步 `<html lang>`，减少浏览器翻译弹窗。
 
-## Run Locally
+## 项目结构
 
-**Prerequisites:**  Node.js
+```
+mygame/
+├─ App.tsx              # 顶层 UI + 状态逻辑
+├─ components/
+│  ├─ Block.tsx         # 单格渲染，含 3D 墙体、阴影等
+│  └─ GameBoard.tsx     # 棋盘布局、自适应缩放
+├─ services/
+│  └─ geminiService.ts  # （示例）对接外部推理 API
+├─ terrainUtils.ts      # 角色/地形判定等工具
+├─ types.ts             # 全局类型定义
+├─ assets/
+│  ├─ pin-white.svg
+│  └─ pin-black.svg
+├─ index.tsx / index.html
+├─ vite.config.ts
+└─ README.md
+```
 
+## 环境要求
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- Node.js ≥ 18（建议 18.17+）
+- npm ≥ 9
+- Windows / macOS / Linux 任���平台
+
+## 安装与运行
+
+```powershell
+npm install
+npm run dev
+```
+
+- 默认在 `http://localhost:5173/` 启动。
+- 首次进入需点击“开始游戏”按钮或按键盘 `E` / 手柄 `A` 解锁音频，否则浏览器会阻止声音播放。
+
+### 生产构建
+
+```powershell
+npm run build
+```
+
+产物会输出到 `dist/` 目录，可通过静态服务器部署，例如：
+
+```powershell
+npm install -g serve
+serve dist -l 4173
+```
+
+## 玩法说明
+
+- **启动**：进入页面后，按提示按钮或快捷键开始，才能操作角色并启用音效。
+- **移动**：
+  - 键盘：`WASD` / 方向键
+  - 手柄：左摇杆或十字键
+- **切换角色**：键盘 `Space`/`Enter`/`E`，手柄 `A`（编辑器中禁用）。
+- **重置关卡**：键盘 `R`，手柄 `Select/Start`。
+- **目标**：任一角色碰到目标会收集；若同时完成全部目标，会播放胜利音并弹出胜利界面。
+
+## 关卡编辑器指南
+
+1. 在左侧模式切换中选择 “编辑”。
+2. 选择笔刷：
+   - **Wall**：放置独立墙块。
+   - **Light/Dark**：放置白/黑地板，可拖拽绘制，相互覆盖。
+   - **P1/P2**：放置角色起点，只能落在与自身相反颜色地块上，且不能重叠。
+   - **Target**：仅能放在黑/白地板上，墙或空地会被拒绝。
+   - **Eraser**：清空为 Void，若清除含目标则自动删除。
+3. 拖拽绘制支持连续涂刷；放置角色或墙时会同步校验并播放错误音。
+4. 使用导入/导出按钮与剪贴板交互 JSON。
+
+> 编辑模式下，角色以“地图钉”样式显示，完全透明叠放，且不会再覆盖脚下地块；地图钉位置合法性会阻止进入 Play 模式。
+
+## 常见问题
+
+| 问题 | 解决方案 |
+| --- | --- |
+| `TS2307: Cannot find module '*.svg'` | 项目已在 `globals.d.ts` 声明 SVG 模块；若自定义新 SVG，确保文件位于 `src` 内即可按 `import Icon from '...svg';` 使用。 |
+| “The AudioContext was not allowed to start” | 必须通过用户手势触发（按钮或快捷键）后才可播放音频；为此提供了“开始游戏”覆盖层。 |
+| 切换键重复触发 / 手柄防抖失效 | 已实现键盘、手柄的冷却与防抖；若新增输入设备，请参考 `App.tsx` 中键盘/手柄相关 Hook。 |
+| 地图钉遮挡地块 | 编辑模式下已禁用 `getEffectiveTerrain` 的地形覆盖，并且钉子改为外部 SVG + 半透明 `<img>` 渲染，确保底层色块可见。 |
+
+## 开发建议
+
+- 若需要引入更多静态资源，推荐继续使用 `import asset from './path.svg';`，并在 `globals.d.ts` 中维护类型声明。
+- 在实现新玩法前，可先扩展 `TerrainType` 与 `EditorTool`，再更新 `Block.tsx` 的渲染逻辑和 `handleEditorClick` 的编辑器行为。
+- 编写新测试场景或回归测试时，可通过导入/导出 JSON 快速建立地图样例。
+
+## 许可证
+
+目前未指定许可，默认保留所有权利。如需开放源码或分发，请与项目作者进一步确认。
