@@ -60,21 +60,22 @@ const L = T.LightTile;
 const D = T.DarkTile;
 
 export const INITIAL_LEVEL: LevelData = {
-  width: 8,
-  height: 6,
+  width: 7,
+  height: 7,
   terrain: [
-    [W, W, W, W, W, W, W, W],
-    [W, D, D, L, L, D, D, W],
-    [W, D, W, L, L, W, D, W],
-    [W, D, L, L, L, L, D, W],
-    [W, D, D, L, L, D, D, W],
-    [W, W, W, W, W, W, W, W],
+    [W, W, W, W, W, W, W],
+    [W, D, D, W, W, D, W],
+    [W, L, D, L, L, D, W],
+    [W, L, D, W, L, D, W],
+    [W, L, D, D, L, D, W],
+    [W, L, W, W, L, L, W],
+    [W, W, W, W, W, W, W],
   ],
   p1Start: { x: 1, y: 1 },
-  p2Start: { x: 4, y: 1 },
+  p2Start: { x: 5, y: 5 },
   targets: [
-    { x: 1, y: 4 },
-    { x: 6, y: 4 },
+    { x: 1, y: 5 },
+    { x: 5, y: 1 },
   ]
 };
 
