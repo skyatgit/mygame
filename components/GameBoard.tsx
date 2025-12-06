@@ -92,9 +92,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             const isTargetCollected = isTarget ? collectedTargets[targetIndex] : false;
 
             return (
-              <div 
-                key={`${x}-${y}`} 
-                className="aspect-square w-full"
+              <div
+                key={`${x}-${y}`}
+                className={`aspect-square w-full ${editorMode ? 'border border-gray-800' : ''}`}
               >
                 <Block
                    x={x}
