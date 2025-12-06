@@ -29,15 +29,28 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-
+ 
   useLayoutEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
     const updateSize = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      setViewportSize({ width: rect.width, height: rect.height });
+      const rect = node.getBoundingClientRect();
+      setViewportSize(prev => (
+        prev.width === rect.width && prev.height === rect.height
+          ? prev
+          : { width: rect.width, height: rect.height }
+      ));
     };
 
     updateSize();
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(updateSize);
+      observer.observe(node);
+      return () => observer.disconnect();
+    }
+
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
