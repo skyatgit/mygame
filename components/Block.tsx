@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { TerrainType, CharacterType, Position } from '../types';
 import { BLOCK_COLORS } from '../theme';
 import PinWhiteSvg from '../assets/pin-white.svg';
@@ -29,9 +29,36 @@ const BlockComponent: React.FC<BlockProps> = ({
   editorMode,
   tileSize
 }) => {
-  
+  const [isBlinking, setIsBlinking] = useState(false);
+
   const isP1Here = p1Pos?.x === x && p1Pos?.y === y;
   const isP2Here = p2Pos?.x === x && p2Pos?.y === y;
+
+  // Random blink effect
+  useEffect(() => {
+    if (!isP1Here && !isP2Here) return;
+
+    let blinkTimer: number;
+    let closeTimer: number;
+
+    const scheduleNextBlink = () => {
+      const delay = 2000 + Math.random() * 3000; // 2-5秒随机眨眼
+      blinkTimer = window.setTimeout(() => {
+        setIsBlinking(true);
+        closeTimer = window.setTimeout(() => {
+          setIsBlinking(false);
+          scheduleNextBlink();
+        }, 150); // 眨眼持续150ms
+      }, delay);
+    };
+
+    scheduleNextBlink();
+
+    return () => {
+      clearTimeout(blinkTimer);
+      clearTimeout(closeTimer);
+    };
+  }, [isP1Here, isP2Here]);
 
   // Determine if this block should be rendered as a "Visual Wall" (High/Raised)
   // Wall is always high.
@@ -165,8 +192,17 @@ const BlockComponent: React.FC<BlockProps> = ({
 
     const renderEyes = (size: string) => (
       <div className="absolute top-[30%] left-0 right-0 flex justify-center gap-[20%]">
-        <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
-        <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
+        {isBlinking ? (
+          <>
+            <div className={`${size} h-[2px] rounded-sm ${eyeColorClass}`}></div>
+            <div className={`${size} h-[2px] rounded-sm ${eyeColorClass}`}></div>
+          </>
+        ) : (
+          <>
+            <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
+            <div className={`${size} aspect-square rounded-sm ${eyeColorClass}`}></div>
+          </>
+        )}
       </div>
     );
 
