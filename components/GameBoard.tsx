@@ -1,5 +1,5 @@
 import React, { useRef, useState, useLayoutEffect, useMemo } from 'react';
-import { LevelData, GameState, Position, TerrainType, CharacterType } from '../types';
+import { LevelData, GameState, Position } from '../types';
 import { Block } from './Block';
 import { getEffectiveTerrain } from '../terrainUtils';
 
@@ -68,32 +68,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const boardWidth = level.width * tileSize;
   const boardHeight = level.height * tileSize;
 
-  // Helper to identify the specific visual type of the wall.
-  // Returns a specific string for each wall type, or null if it's not a wall.
-  // This allows us to ensure that only walls of the SAME type merge visually.
-  const getVisualWallType = (x: number, y: number): string | null => {
-    // Out of bounds is never a wall, ensuring outer edges always have slopes
-    if (x < 0 || x >= level.width || y < 0 || y >= level.height) return null; 
-    
-    const t = getEffectiveTerrain(level, gameState, x, y);
-
-    // 1. Static Hard Walls (Gray)
-    if (t === TerrainType.Wall) return 'WALL_STATIC';
-
-    // 2. Dynamic Walls based on Active Character
-    if (!editorMode && activeChar) {
-        // If P1 (White) is active, Light Tiles behave as Walls (White Walls)
-        if (activeChar === CharacterType.P1_White && t === TerrainType.LightTile) return 'WALL_LIGHT_RAISED';
-        
-        // If P2 (Black) is active, Dark Tiles behave as Walls (Black Walls)
-        if (activeChar === CharacterType.P2_Black && t === TerrainType.DarkTile) return 'WALL_DARK_RAISED';
-    }
-
-    // Otherwise it's a floor or void
-    return null;
-  };
-
-  return (
+   return (
     <div 
       ref={containerRef}
       className="flex bg-[#050505] p-6 rounded-xl shadow-2xl select-none w-full h-full"
