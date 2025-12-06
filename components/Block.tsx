@@ -79,24 +79,24 @@ export const Block: React.FC<BlockProps> = ({
 
   // Colors designed for a symmetric top-down "Retro Bevel" look
   const C = {
-    Wall: { 
-      base: '#52525b', top: '#71717a', left: '#3f3f46', right: '#3f3f46', bottom: '#27272a' 
-    }, 
+    Wall: {
+      base: '#757c8d', top: '#e5ebf8', left: '#4b4f5e', right: '#434655', bottom: '#242732'
+    },
     // Light Tile Colors (When acts as Floor)
-    LightFloor: { 
-      base: '#f5f5f4', top: '#f5f5f4', left: '#f5f5f4', right: '#f5f5f4', bottom: '#f5f5f4' 
+    LightFloor: {
+      base: '#f7f7f4', top: '#f7f7f4', left: '#f7f7f4', right: '#f7f7f4', bottom: '#f7f7f4'
     },
     // Light Tile Colors (When acts as Wall) - Slightly darker side slopes to show height
     LightWall: {
-      base: '#e5e5e5', top: '#f5f5f5', left: '#a3a3a3', right: '#a3a3a3', bottom: '#737373'
+      base: '#f4f5f7', top: '#ffffff', left: '#c1c8da', right: '#b7bfd2', bottom: '#8e95aa'
     },
     // Dark Tile Colors (When acts as Floor)
-    DarkFloor: { 
-      base: '#18181b', top: '#18181b', left: '#18181b', right: '#18181b', bottom: '#18181b' 
+    DarkFloor: {
+      base: '#1a1a1f', top: '#1a1a1f', left: '#1a1a1f', right: '#1a1a1f', bottom: '#1a1a1f'
     },
     // Dark Tile Colors (When acts as Wall)
     DarkWall: {
-      base: '#18181b', top: '#3f3f46', left: '#000000', right: '#000000', bottom: '#000000'
+      base: '#262a37', top: '#727a8c', left: '#141724', right: '#0f111b', bottom: '#05060a'
     },
 
     Void: { base: '#111', top: '#1a1a1a', left: '#151515', right: '#0a0a0a', bottom: '#050505' },
@@ -105,7 +105,7 @@ export const Block: React.FC<BlockProps> = ({
     P2: { base: '#171717', top: '#404040', left: '#262626', right: '#262626', bottom: '#000000' },
   };
 
-  const WALL_BORDER_WIDTH = 4;
+  const WALL_BORDER_WIDTH = 5;
   const FLOOR_BORDER_WIDTH = 0;
   const LAYERS = { floor: 1, target: 2, active: 5 };
 
