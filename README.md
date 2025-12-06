@@ -25,8 +25,6 @@ mygame/
 ├─ components/
 │  ├─ Block.tsx         # 单格渲染，含 3D 墙体、阴影等
 │  └─ GameBoard.tsx     # 棋盘布局、自适应缩放
-├─ services/
-│  └─ geminiService.ts  # （示例）对接外部推理 API
 ├─ terrainUtils.ts      # 角色/地形判定等工具
 ├─ types.ts             # 全局类型定义
 ├─ assets/
