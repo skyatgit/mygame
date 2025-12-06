@@ -28,7 +28,7 @@ export interface GameState {
   p1Pos: Position;
   p2Pos: Position;
   activeChar: CharacterType;
-  collectedTargets: number; // Count or IDs
+  collectedTargets: boolean[]; // Track collected targets by index
 }
 
 export type EditorTool = 'wall' | 'light' | 'dark' | 'p1' | 'p2' | 'target' | 'eraser';

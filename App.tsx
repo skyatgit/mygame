@@ -8,6 +8,9 @@ import {
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
 
+const computeCollectedTargets = (level: LevelData, p1: Position, p2: Position) =>
+  level.targets.map(t => (t.x === p1.x && t.y === p1.y) || (t.x === p2.x && t.y === p2.y));
+
 const App: React.FC = () => {
   // --- Global State ---
   const [lang, setLang] = useState<Lang>('zh');
@@ -20,7 +23,7 @@ const App: React.FC = () => {
     p1Pos: INITIAL_LEVEL.p1Start,
     p2Pos: INITIAL_LEVEL.p2Start,
     activeChar: CharacterType.P1_White,
-    collectedTargets: 0
+    collectedTargets: computeCollectedTargets(INITIAL_LEVEL, INITIAL_LEVEL.p1Start, INITIAL_LEVEL.p2Start)
   });
   const [moveCount, setMoveCount] = useState(0);
   const [isWon, setIsWon] = useState(false);
@@ -58,7 +61,7 @@ const App: React.FC = () => {
     }
   };
 
-  const playSound = (type: 'move' | 'switch' | 'win' | 'error') => {
+  const playSound = (type: 'move' | 'switch' | 'win' | 'error' | 'collect') => {
     if (!audioCtx.current) return;
     const osc = audioCtx.current.createOscillator();
     const gain = audioCtx.current.createGain();
@@ -90,6 +93,13 @@ const App: React.FC = () => {
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
       osc.start(now);
       osc.stop(now + 0.6);
+    } else if (type === 'collect') {
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.linearRampToValueAtTime(660, now + 0.08);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.02, now + 0.18);
+      osc.start(now);
+      osc.stop(now + 0.18);
     } else if (type === 'error') {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(90, now);
@@ -108,73 +118,19 @@ const App: React.FC = () => {
       p1Pos: { ...currentLevel.p1Start },
       p2Pos: { ...currentLevel.p2Start },
       activeChar: CharacterType.P1_White,
-      collectedTargets: 0
+      collectedTargets: computeCollectedTargets(currentLevel, currentLevel.p1Start, currentLevel.p2Start)
     });
     setMoveCount(0);
     setIsWon(false);
   }, [currentLevel]);
-
-  const checkWin = useCallback((currentP1: Position, currentP2: Position) => {
-    // A target is collected if ANY character is on it? 
-    // Usually in puzzle games, you just need to touch them. 
-    // Or maybe we need to *occupy* all targets simultaneously?
-    // "Collect all green targets" implies visiting them.
-    // Let's implement: "Targets must be covered".
-    // Wait, typical mechanic is "touch to collect" or "cover all to win".
-    // Prompt says: "Collect all...". Let's assume 'touching' removes them or we track collected IDs.
-    // Simpler mechanic for this grid type: "Cover all targets simultaneously" is harder. 
-    // Let's go with "Touch to collect".
-    
-    // Actually, "Touch to collect" is better for state. 
-    // We need to track *which* targets are collected.
-    // The simple `collectedTargets` count is not enough if we revisit.
-    // Let's assume once touched, it's collected.
-    // But for this code, I'll check if the player is currently ON a target and add it to a set.
-    // Since I used `collectedTargets: number`, let's just check win condition:
-    // "Touch all targets". I need to track visited targets.
-    // Re-implementation: Let's simpler "Cover all targets at once" ? No, that's hard if target count > 2.
-    // Let's stick to: "Touch all targets to clear them".
-    
-    // BUT, my LevelData structure is static. I need dynamic target tracking.
-    // I will check `gameState` updates. 
-    // For simplicity in this version: `targets` are static in level. 
-    // I need a `collectedTargetIndices` Set in GameState.
-    // Let's update `gameState` quickly below to include specific collected targets.
-  }, []); // Placeholder
-
-  // Better Win Logic: Track collected indices
-  const [collectedIndices, setCollectedIndices] = useState<Set<number>>(new Set());
-
+ 
+  const collectedCount = gameState.collectedTargets.filter(Boolean).length;
   useEffect(() => {
-    // Check collision with targets
-    const newCollected = new Set(collectedIndices);
-    let changed = false;
-    const { p1Pos, p2Pos } = gameState;
-
-    currentLevel.targets.forEach((t, i) => {
-      if (!newCollected.has(i)) {
-        if ((t.x === p1Pos.x && t.y === p1Pos.y) || (t.x === p2Pos.x && t.y === p2Pos.y)) {
-          newCollected.add(i);
-          changed = true;
-          playSound('move'); // Reuse move sound for collect
-        }
-      }
-    });
-
-    if (changed) {
-      setCollectedIndices(newCollected);
-      if (newCollected.size === currentLevel.targets.length) {
-        setIsWon(true);
-        playSound('win');
-      }
+    if (collectedCount === currentLevel.targets.length && currentLevel.targets.length > 0) {
+      setIsWon(true);
+      playSound('win');
     }
-  }, [gameState.p1Pos, gameState.p2Pos, currentLevel]);
-
-  // Reset collected when level resets
-  useEffect(() => {
-    setCollectedIndices(new Set());
-  }, [currentLevel, mode]);
-
+  }, [collectedCount, currentLevel.targets.length]);
 
   const handleMove = useCallback((dx: number, dy: number) => {
     if (isWon || mode === 'edit') return;
@@ -221,10 +177,31 @@ const App: React.FC = () => {
       if (canMove) {
         playSound('move');
         setMoveCount(c => c + 1);
+        const nextP1 = isP1Active ? { x: targetX, y: targetY } : p1Pos;
+        const nextP2 = !isP1Active ? { x: targetX, y: targetY } : p2Pos;
+        const nextCollected = [...prev.collectedTargets];
+        const playerHit = isP1Active ? nextP1 : nextP2;
+        const previouslyCollected = nextCollected.filter(Boolean).length;
+        let newlyCollected = 0;
+
+        currentLevel.targets.forEach((t, i) => {
+          if (!nextCollected[i] && playerHit.x === t.x && playerHit.y === t.y) {
+            nextCollected[i] = true;
+            newlyCollected++;
+          }
+        });
+
+        const totalTargets = currentLevel.targets.length;
+        const willCompleteLevel = totalTargets > 0 && previouslyCollected + newlyCollected === totalTargets;
+        if (newlyCollected > 0 && !willCompleteLevel) {
+          // Avoid overlapping collect + win sounds by only playing collect mid-level
+          playSound('collect');
+        }
         return {
           ...prev,
-          p1Pos: isP1Active ? { x: targetX, y: targetY } : p1Pos,
-          p2Pos: !isP1Active ? { x: targetX, y: targetY } : p2Pos,
+          p1Pos: nextP1,
+          p2Pos: nextP2,
+          collectedTargets: nextCollected,
         };
       } else {
         // Optional: Bump animation or sound?
@@ -350,7 +327,8 @@ const App: React.FC = () => {
     setGameState(prev => ({
       ...prev,
       p1Pos: newLevel.p1Start,
-      p2Pos: newLevel.p2Start
+      p2Pos: newLevel.p2Start,
+      collectedTargets: computeCollectedTargets(newLevel, newLevel.p1Start, newLevel.p2Start)
     }));
   };
 
@@ -462,7 +440,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex justify-between items-center border-b border-[#333] pb-2">
                   <span className="text-gray-500 text-sm font-bold tracking-wider">{t.targets}</span>
-                  <span className="text-2xl font-mono text-green-500">{collectedIndices.size} / {currentLevel.targets.length}</span>
+                  <span className="text-2xl font-mono text-green-500">{collectedCount} / {currentLevel.targets.length}</span>
                 </div>
                 
                 <div className="space-y-2 mt-2">
@@ -547,6 +525,7 @@ const App: React.FC = () => {
              level={currentLevel} 
              gameState={gameState} 
              editorMode={mode === 'edit'}
+             collectedTargets={gameState.collectedTargets}
              onBlockClick={handleEditorClick}
              editorP1Start={currentLevel.p1Start}
              editorP2Start={currentLevel.p2Start}

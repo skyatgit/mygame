@@ -10,6 +10,7 @@ interface GameBoardProps {
   onBlockClick?: (x: number, y: number) => void;
   editorP1Start?: Position;
   editorP2Start?: Position;
+  collectedTargets?: boolean[];
 }
 
 export const GameBoard: React.FC<GameBoardProps> = ({ 
@@ -18,7 +19,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   editorMode = false,
   onBlockClick,
   editorP1Start,
-  editorP2Start
+  editorP2Start,
+  collectedTargets = []
 }) => {
   
   const p1Pos = gameState ? gameState.p1Pos : editorP1Start;
@@ -67,7 +69,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {level.terrain.map((row, y) => (
           row.map((baseTerrain, x) => {
             const terrain = getEffectiveTerrain(level, gameState, x, y);
-            const isTarget = level.targets.some(t => t.x === x && t.y === y);
+            const targetIndex = level.targets.findIndex(t => t.x === x && t.y === y);
+            const isTarget = targetIndex >= 0;
+            const isTargetCollected = isTarget ? collectedTargets[targetIndex] : false;
             
             // Get the exact type of the current block
             const currentWallType = getVisualWallType(x, y);
@@ -119,7 +123,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   p1Pos={p1Pos}
                   p2Pos={p2Pos}
                   activeChar={activeChar}
-                  isTarget={isTarget}
+                  isTarget={isTarget && !isTargetCollected}
                   connections={connections}
                   innerCorners={innerCorners}
                   editorMode={editorMode}
