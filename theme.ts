@@ -1,11 +1,11 @@
 // 3D 块体颜色主题配置
 export const BLOCK_COLORS = {
   Wall: {
-    base: '#757c8d',
-    top: '#e5ebf8',
-    left: '#4b4f5e',
-    right: '#434655',
-    bottom: '#242732'
+    base: '#5a5f6e',
+    top: '#8a90a0',
+    left: '#3d414d',
+    right: '#32363f',
+    bottom: '#1e2128'
   },
   LightFloor: {
     base: '#f7f7f4',
