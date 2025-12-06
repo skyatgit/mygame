@@ -312,9 +312,9 @@ const App: React.FC = () => {
            return;
          }
          // Buttons: 0 (A/Cross), 1 (B/Circle), 2 (X/Square), 3 (Y/Triangle)
-         // Let's say Button 0 or 3 switches.
-         const btnSwitch = gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[2].pressed || gp.buttons[3].pressed;
-         const btnReset = gp.buttons[8].pressed || gp.buttons[9].pressed; // Select/Start often
+         // Button 0, 1, 2 for switch, Button 3 (Y) for reset
+         const btnSwitch = gp.buttons[0].pressed || gp.buttons[1].pressed || gp.buttons[2].pressed;
+         const btnReset = gp.buttons[3].pressed || gp.buttons[8].pressed || gp.buttons[9].pressed; // Y/Select/Start
  
          if (suppressGamepadSwitchRef.current) {
            if (!btnSwitch) suppressGamepadSwitchRef.current = false;
