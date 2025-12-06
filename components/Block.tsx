@@ -96,7 +96,7 @@ export const Block: React.FC<BlockProps> = ({
     },
     // Dark Tile Colors (When acts as Wall)
     DarkWall: {
-      base: '#262a37', top: '#727a8c', left: '#141724', right: '#0f111b', bottom: '#05060a'
+      base: '#2d3241', top: '#939bad', left: '#2d3241', right: '#191c26', bottom: '#11131a'
     },
 
     Void: { base: '#111', top: '#1a1a1a', left: '#151515', right: '#0a0a0a', bottom: '#050505' },
@@ -241,7 +241,7 @@ export const Block: React.FC<BlockProps> = ({
     if (!isActive) {
       const floorPalette = type === CharacterType.P1_White ? C.LightFloor : C.DarkFloor;
       return (
-        <div className="pointer-events-none absolute inset-0" style={{ zIndex: layer }}>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" style={{ zIndex: layer }}>
           <div
             className="w-full h-full relative"
             style={get3DStyle(
@@ -261,7 +261,7 @@ export const Block: React.FC<BlockProps> = ({
 
     return (
       <div
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+        className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
         style={{ zIndex: layer }}
       >
         <div
