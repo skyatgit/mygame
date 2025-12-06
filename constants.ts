@@ -37,7 +37,7 @@ export const TEXT = {
     p1: "P1 (WHITE)",
     p2: "P2 (BLACK)",
     instructions: "P1 moves on DARK. P2 moves on LIGHT. Inactive character becomes terrain.",
-    controls: "WASD / Arrows to Move. SPACE to Switch.",
+    controls: "WASD / Gamepad / Swipe to move. E / Gamepad A / Double-tap to switch.",
   },
   zh: {
     title: "双相",
@@ -75,7 +75,7 @@ export const TEXT = {
     p1: "P1 (白)",
     p2: "P2 (黑)",
     instructions: "白方块走黑路，黑方块走白路。静止的角色会化为对方的路。",
-    controls: "WASD / 方向键移动。空格键 / E 键切换角色。",
+    controls: "WASD / 手柄摇杆 / 屏幕上下左右滑动控制方向，E键 / 手柄A键 / 屏幕双击切换角色。",
   }
 };
 

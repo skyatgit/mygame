@@ -3,7 +3,7 @@ import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
 import {
-  Gamepad2, RotateCcw, PenTool, Download, Upload,
+  Gamepad2, PenTool, Download, Upload,
   Check, Globe, Trash2
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
@@ -582,60 +582,49 @@ const App: React.FC = () => {
 
            {/* Game Info (Play Mode) */}
            {mode === 'play' && (
-             <div className="bg-[#1a1a1a] p-4 rounded-lg border border-[#333] flex flex-col gap-4">
-                <div className="flex justify-between items-center border-b border-[#333] pb-2">
-                  <span className="text-gray-500 text-sm font-bold tracking-wider">{t.moves}</span>
-                  <span className="text-2xl font-mono">{moveCount}</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-[#333] pb-2">
-                  <span className="text-gray-500 text-sm font-bold tracking-wider">{t.targets}</span>
-                  <span className="text-2xl font-mono text-green-500">{collectedCount} / {currentLevel.targets.length}</span>
-                </div>
-                
-                <div className="space-y-2 mt-2">
-                  <div className={`p-2 rounded border flex items-center justify-between transition-all ${gameState.activeChar === CharacterType.P1_White ? 'bg-white text-black border-white' : 'bg-[#222] text-gray-500 border-[#333]'}`}>
-                    <span className="text-xs font-bold">{t.p1}</span>
-                    {gameState.activeChar === CharacterType.P1_White && <Check size={14} />}
+             <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#333] flex flex-col gap-2">
+                <div className="flex items-center gap-2 border-b border-[#333] pb-1.5">
+                  <div className="px-2 py-1 rounded border border-[#333] bg-[#222] flex items-center justify-center gap-1.5">
+                    <span className="text-gray-500 text-xs font-bold">{t.moves}</span>
+                    <span className="text-white text-sm font-mono">{moveCount}</span>
                   </div>
-                  <div className={`p-2 rounded border flex items-center justify-between transition-all ${gameState.activeChar === CharacterType.P2_Black ? 'bg-black text-white border-white' : 'bg-[#222] text-gray-500 border-[#333]'}`}>
+                  <div className={`flex-1 px-2 py-1 rounded border flex items-center justify-center gap-1 transition-all ${gameState.activeChar === CharacterType.P1_White ? 'bg-white text-black border-white' : 'bg-[#222] text-gray-500 border-[#333]'}`}>
+                    <span className="text-xs font-bold">{t.p1}</span>
+                    {gameState.activeChar === CharacterType.P1_White && <Check size={10} />}
+                  </div>
+                  <div className={`flex-1 px-2 py-1 rounded border flex items-center justify-center gap-1 transition-all ${gameState.activeChar === CharacterType.P2_Black ? 'bg-black text-white border-white' : 'bg-[#222] text-gray-500 border-[#333]'}`}>
                     <span className="text-xs font-bold">{t.p2}</span>
-                    {gameState.activeChar === CharacterType.P2_Black && <Check size={14} />}
+                    {gameState.activeChar === CharacterType.P2_Black && <Check size={10} />}
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500 mt-2 leading-relaxed space-y-3">
-                  <p>{t.instructions}</p>
-                  <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gray-500">
-                    <span>{t.controls}</span>
-                    <button onClick={resetGame} className="flex items-center gap-1 text-white bg-white/10 px-2 py-1 rounded hover:bg-white/20 transition-colors">
-                      <RotateCcw size={12} /> {t.reset}
-                    </button>
-                  </div>
+                <div className="text-xs text-gray-500 leading-snug">
+                  <p className="text-[11px] uppercase tracking-wide">{t.controls}</p>
                 </div>
              </div>
            )}
 
            {/* Editor Tools (Edit Mode) */}
            {mode === 'edit' && (
-             <div className="bg-[#1a1a1a] p-4 rounded-lg border border-[#333] flex flex-col gap-4 animate-in fade-in slide-in-from-left-4">
+             <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#333] flex flex-col gap-2 animate-in fade-in slide-in-from-left-4">
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.width} / {t.height}</div>
                 <div className="flex gap-2">
-                   <div className="flex items-center gap-2 bg-[#222] px-2 rounded">
+                   <div className="flex items-center gap-1.5 bg-[#222] px-1.5 rounded text-sm">
                       <span className="text-gray-500 text-xs">W</span>
-                      <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="p-1 hover:text-white">-</button>
-                      <span className="font-mono w-4 text-center">{currentLevel.width}</span>
-                      <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="p-1 hover:text-white">+</button>
+                      <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="px-1 hover:text-white">-</button>
+                      <span className="font-mono w-4 text-center text-xs">{currentLevel.width}</span>
+                      <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="px-1 hover:text-white">+</button>
                    </div>
-                   <div className="flex items-center gap-2 bg-[#222] px-2 rounded">
+                   <div className="flex items-center gap-1.5 bg-[#222] px-1.5 rounded text-sm">
                       <span className="text-gray-500 text-xs">H</span>
-                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="p-1 hover:text-white">-</button>
-                      <span className="font-mono w-4 text-center">{currentLevel.height}</span>
-                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="p-1 hover:text-white">+</button>
+                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="px-1 hover:text-white">-</button>
+                      <span className="font-mono w-4 text-center text-xs">{currentLevel.height}</span>
+                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="px-1 hover:text-white">+</button>
                    </div>
                 </div>
 
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-2">{t.tools}</div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">{t.tools}</div>
+                <div className="grid grid-cols-2 gap-1.5">
                    {[
                      { id: 'wall', label: t.toolLabels.wall, color: 'bg-neutral-800' },
                      { id: 'eraser', label: t.toolLabels.eraser, color: 'bg-neutral-900 border border-red-900/50 text-red-500', icon: Trash2 },
@@ -648,25 +637,25 @@ const App: React.FC = () => {
                       <button
                         key={tool.id}
                         onClick={() => setEditorTool(tool.id as EditorTool)}
-                        className={`p-2 rounded text-xs font-bold flex items-center justify-center gap-2 transition-all border-2 ${
-                          editorTool === tool.id 
-                            ? 'border-yellow-500 scale-105 shadow-lg' 
+                        className={`p-1.5 rounded text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-2 ${
+                          editorTool === tool.id
+                            ? 'border-yellow-500 scale-105 shadow-lg'
                             : 'border-transparent opacity-70 hover:opacity-100'
                         } ${tool.color}`}
                       >
-                         {tool.icon && <tool.icon size={12} />}
+                         {tool.icon && <tool.icon size={11} />}
                          {tool.label}
                       </button>
                    ))}
                 </div>
 
-                <div className="flex gap-2 mt-4 pt-4 border-t border-[#333]">
-                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
-                      {copyFeedback ? <Check size={12} className="text-green-500"/> : <Download size={12}/>}
+                <div className="flex gap-2 mt-2 pt-2 border-t border-[#333]">
+                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1.5 rounded text-xs flex items-center justify-center gap-1">
+                      {copyFeedback ? <Check size={11} className="text-green-500"/> : <Download size={11}/>}
                       {copyFeedback ? t.copied : t.export}
                    </button>
-                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
-                      <Upload size={12}/> {t.import}
+                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1.5 rounded text-xs flex items-center justify-center gap-1">
+                      <Upload size={11}/> {t.import}
                    </button>
                 </div>
              </div>
@@ -674,17 +663,19 @@ const App: React.FC = () => {
         </div>
 
         {/* Center: Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center relative bg-[#0a0a0a] rounded-xl border border-[#222] shadow-inner p-4 overflow-hidden">
-            
-            <GameBoard 
-              level={currentLevel} 
-              gameState={gameState} 
-              editorMode={mode === 'edit'}
-              collectedTargets={gameState.collectedTargets}
-              onBlockClick={handleEditorClick}
-              editorP1Start={currentLevel.p1Start}
-              editorP2Start={currentLevel.p2Start}
-            />
+        <div className="flex-1 flex flex-col items-center justify-center relative bg-[#0a0a0a] rounded-xl border border-[#222] shadow-inner p-4 overflow-hidden mb-32 md:mb-0">
+
+            <div className="w-full h-full flex items-center justify-center">
+              <GameBoard
+                level={currentLevel}
+                gameState={gameState}
+                editorMode={mode === 'edit'}
+                collectedTargets={gameState.collectedTargets}
+                onBlockClick={handleEditorClick}
+                editorP1Start={currentLevel.p1Start}
+                editorP2Start={currentLevel.p2Start}
+              />
+            </div>
 
            {/* Win Overlay */}
            {isWon && (
@@ -703,16 +694,6 @@ const App: React.FC = () => {
                 </div>
              </div>
            )}
-
-           {/* Mobile Controls Overlay (Only visible on touch devices mainly, but helpful visual cue) */}
-           <div className="absolute bottom-4 right-4 flex gap-2 md:hidden">
-              <button 
-                onClick={handleSwitch}
-                className="w-16 h-16 rounded-full bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center active:bg-white/30"
-              >
-                <RotateCcw className="text-white" />
-              </button>
-           </div>
          </div>
 
       </div>
