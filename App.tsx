@@ -543,10 +543,10 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-[#111] text-gray-200 flex flex-col items-stretch font-sans select-none">
       
       {/* Header Area */}
-      <div className="w-full px-4 py-4 flex justify-between items-center bg-[#181818] border-b border-[#333]">
+      <div className="w-full px-4 py-2 flex justify-between items-center bg-[#181818] border-b border-[#333]">
         <div className="flex items-center gap-4">
           <div className="flex flex-col leading-tight">
-             <h1 className="text-2xl font-black tracking-widest text-white">
+             <h1 className="text-xl font-black tracking-widest text-white">
                {t.title} <span className="text-neutral-500 font-light">{t.subtitle}</span>
              </h1>
           </div>
@@ -559,11 +559,11 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - 左右分栏比例 2:8 */}
       <div className="flex-1 flex flex-col md:flex-row w-full gap-4 p-4 overflow-hidden">
         
-        {/* Left Panel: Controls / Info */}
-        <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-4">
+        {/* Left Panel: Controls / Info - 占 20% 宽度 */}
+        <div className="w-full md:w-[20%] md:min-w-[200px] md:max-w-[560px] flex-shrink-0 flex flex-col gap-4">
            {/* Mode Switcher */}
            <div className="bg-[#1a1a1a] p-1 rounded-lg flex border border-[#333]">
               <button 
@@ -606,30 +606,26 @@ const App: React.FC = () => {
 
            {/* Editor Tools (Edit Mode) */}
            {mode === 'edit' && (
-             <div className="bg-[#1a1a1a] p-2 rounded-lg border border-[#333] flex flex-col gap-1.5 animate-in fade-in slide-in-from-left-4">
-                <div className="flex items-center justify-between gap-2">
-                   <span className="text-[10px] font-bold text-gray-500 uppercase">{t.width}/{t.height}</span>
-                   <div className="flex gap-1.5">
-                      <div className="flex items-center gap-1 bg-[#222] px-1.5 py-0.5 rounded text-xs">
-                         <span className="text-gray-500 text-[10px]">W</span>
-                         <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="px-0.5 hover:text-white text-xs">-</button>
-                         <span className="font-mono w-3 text-center text-[10px]">{currentLevel.width}</span>
-                         <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="px-0.5 hover:text-white text-xs">+</button>
-                      </div>
-                      <div className="flex items-center gap-1 bg-[#222] px-1.5 py-0.5 rounded text-xs">
-                         <span className="text-gray-500 text-[10px]">H</span>
-                         <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="px-0.5 hover:text-white text-xs">-</button>
-                         <span className="font-mono w-3 text-center text-[10px]">{currentLevel.height}</span>
-                         <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="px-0.5 hover:text-white text-xs">+</button>
-                      </div>
+             <div className="bg-[#1a1a1a] p-3 rounded-lg border border-[#333] flex flex-col gap-2 animate-in fade-in slide-in-from-left-4">
+                <div className="flex items-center justify-between gap-1 w-full">
+                   <div className="flex-1 flex items-center justify-center gap-2 bg-[#222] px-3 py-1.5 rounded text-sm">
+                      <span className="text-gray-500 text-xs font-bold">W</span>
+                      <button onClick={() => resizeLevel(currentLevel.width-1, currentLevel.height)} className="px-1.5 py-0.5 hover:text-white hover:bg-[#333] rounded text-sm font-bold">-</button>
+                      <span className="font-mono w-5 text-center text-sm">{currentLevel.width}</span>
+                      <button onClick={() => resizeLevel(currentLevel.width+1, currentLevel.height)} className="px-1.5 py-0.5 hover:text-white hover:bg-[#333] rounded text-sm font-bold">+</button>
+                   </div>
+                   <div className="flex-1 flex items-center justify-center gap-2 bg-[#222] px-3 py-1.5 rounded text-sm">
+                      <span className="text-gray-500 text-xs font-bold">H</span>
+                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height-1)} className="px-1.5 py-0.5 hover:text-white hover:bg-[#333] rounded text-sm font-bold">-</button>
+                      <span className="font-mono w-5 text-center text-sm">{currentLevel.height}</span>
+                      <button onClick={() => resizeLevel(currentLevel.width, currentLevel.height+1)} className="px-1.5 py-0.5 hover:text-white hover:bg-[#333] rounded text-sm font-bold">+</button>
                    </div>
                 </div>
 
-                <div className="text-[10px] font-bold text-gray-500 uppercase">{t.tools}</div>
                 <div className="grid grid-cols-4 gap-1">
                    <button
                      onClick={() => setEditorTool('wall')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-neutral-800 ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-neutral-800 ${
                        editorTool === 'wall'
                          ? 'border-yellow-500 shadow-lg'
                          : 'border-transparent opacity-70 hover:opacity-100'
@@ -640,7 +636,7 @@ const App: React.FC = () => {
                    </button>
                    <button
                      onClick={() => setEditorTool('target')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-green-900 text-green-400 border-green-700 ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-green-900 text-green-400 border-green-700 ${
                        editorTool === 'target'
                          ? 'border-yellow-500 shadow-lg'
                          : 'opacity-70 hover:opacity-100'
@@ -651,20 +647,20 @@ const App: React.FC = () => {
                    </button>
                    <button
                      onClick={() => setEditorTool('eraser')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-neutral-900 text-red-500 ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-neutral-900 text-red-500 ${
                        editorTool === 'eraser'
                          ? 'border-yellow-500 shadow-lg'
                          : 'border-red-900/50 opacity-70 hover:opacity-100'
                      }`}
                      style={{ transform: 'translateZ(0)' }}
                    >
-                     <Trash2 size={10} />
+                     <Trash2 size={14} />
                      {t.toolLabels.eraser}
                    </button>
                    <div></div>
                    <button
                      onClick={() => setEditorTool('light')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-gray-200 text-black ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-gray-200 text-black ${
                        editorTool === 'light'
                          ? 'border-yellow-500 shadow-lg'
                          : 'border-transparent opacity-70 hover:opacity-100'
@@ -675,7 +671,7 @@ const App: React.FC = () => {
                    </button>
                    <button
                      onClick={() => setEditorTool('dark')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-black border-gray-700 ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-black border-gray-700 ${
                        editorTool === 'dark'
                          ? 'border-yellow-500 shadow-lg'
                          : 'opacity-70 hover:opacity-100'
@@ -686,7 +682,7 @@ const App: React.FC = () => {
                    </button>
                    <button
                      onClick={() => setEditorTool('p1')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-white text-black ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-white text-black ${
                        editorTool === 'p1'
                          ? 'border-yellow-500 shadow-lg'
                          : 'border-gray-400 opacity-70 hover:opacity-100'
@@ -697,7 +693,7 @@ const App: React.FC = () => {
                    </button>
                    <button
                      onClick={() => setEditorTool('p2')}
-                     className={`p-1 rounded text-[10px] font-bold flex items-center justify-center gap-1 border-2 bg-black text-white ${
+                     className={`py-2 px-1 rounded text-xs font-bold flex items-center justify-center gap-1 border-2 bg-black text-white ${
                        editorTool === 'p2'
                          ? 'border-yellow-500 shadow-lg'
                          : 'border-gray-600 opacity-70 hover:opacity-100'
@@ -709,12 +705,12 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="flex gap-1.5 mt-1 pt-1.5 border-t border-[#333]">
-                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1 rounded text-[10px] flex items-center justify-center gap-1">
-                      {copyFeedback ? <Check size={10} className="text-green-500"/> : <Download size={10}/>}
+                   <button onClick={exportLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
+                      {copyFeedback ? <Check size={14} className="text-green-500"/> : <Download size={14}/>}
                       {copyFeedback ? t.copied : t.export}
                    </button>
-                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-1 rounded text-[10px] flex items-center justify-center gap-1">
-                      <Upload size={10}/> {t.import}
+                   <button onClick={importLevel} className="flex-1 bg-[#222] hover:bg-[#333] py-2 rounded text-xs flex items-center justify-center gap-1">
+                      <Upload size={14}/> {t.import}
                    </button>
                 </div>
              </div>
