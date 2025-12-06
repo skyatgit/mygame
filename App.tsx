@@ -363,6 +363,57 @@ const App: React.FC = () => {
      return () => cancelAnimationFrame(animationFrameId);
    }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame]);
 
+  // Touch swipe control
+  useEffect(() => {
+    const touchStartRef = { x: 0, y: 0 };
+    const minSwipeDistance = 30;
+    let lastTapTime = 0;
+    const doubleTapDelay = 300;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (mode === 'edit' || !hasStarted) return;
+      const touch = e.touches[0];
+      touchStartRef.x = touch.clientX;
+      touchStartRef.y = touch.clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (mode === 'edit' || !hasStarted) return;
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartRef.x;
+      const deltaY = touch.clientY - touchStartRef.y;
+      const absDeltaX = Math.abs(deltaX);
+      const absDeltaY = Math.abs(deltaY);
+
+      // Check for swipe
+      if (absDeltaX >= minSwipeDistance || absDeltaY >= minSwipeDistance) {
+        if (absDeltaX > absDeltaY) {
+          // Horizontal swipe
+          handleMove(deltaX > 0 ? 1 : -1, 0);
+        } else {
+          // Vertical swipe
+          handleMove(0, deltaY > 0 ? 1 : -1);
+        }
+        return;
+      }
+
+      // Check for double tap
+      const now = Date.now();
+      if (now - lastTapTime < doubleTapDelay) {
+        handleSwitch();
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleMove, handleSwitch, mode, hasStarted]);
 
   // --- Editor Logic ---
   const handleEditorClick = (x: number, y: number) => {
