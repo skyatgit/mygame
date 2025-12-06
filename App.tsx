@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
@@ -16,6 +16,10 @@ const App: React.FC = () => {
   const [lang, setLang] = useState<Lang>('zh');
   const [mode, setMode] = useState<'play' | 'edit'>('play');
   const t = TEXT[lang];
+  
+  useLayoutEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   // --- Game State ---
   const [currentLevel, setCurrentLevel] = useState<LevelData>(INITIAL_LEVEL);
