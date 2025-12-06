@@ -13,6 +13,7 @@ interface BlockProps {
   innerCorners?: { tl: boolean; tr: boolean; bl: boolean; br: boolean };
   onBlockClick?: (x: number, y: number) => void;
   editorMode?: boolean;
+  tileSize?: number;
 }
 
 export const Block: React.FC<BlockProps> = ({ 
@@ -26,7 +27,8 @@ export const Block: React.FC<BlockProps> = ({
   connections,
   innerCorners,
   onBlockClick,
-  editorMode
+  editorMode,
+  tileSize
 }) => {
   
   const isP1Here = p1Pos?.x === x && p1Pos?.y === y;
@@ -105,7 +107,11 @@ export const Block: React.FC<BlockProps> = ({
     P2: { base: '#171717', top: '#404040', left: '#262626', right: '#262626', bottom: '#000000' },
   };
 
-  const WALL_BORDER_WIDTH = 5;
+  const baseTileSize = tileSize ?? (editorMode ? 36 : 48);
+  const WALL_BORDER_WIDTH = Math.min(
+    Math.max(Math.round(baseTileSize * 0.18), 2),
+    Math.floor(baseTileSize / 2)
+  );
   const FLOOR_BORDER_WIDTH = 0;
   const LAYERS = { floor: 1, target: 2, active: 5 };
 

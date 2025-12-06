@@ -394,10 +394,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#111] text-gray-200 flex flex-col items-center justify-center font-sans select-none">
+    <div className="min-h-screen bg-[#111] text-gray-200 flex flex-col items-stretch font-sans select-none">
       
       {/* Header Area */}
-      <div className="w-full max-w-4xl px-4 py-4 flex justify-between items-center bg-[#181818] border-b border-[#333]">
+      <div className="w-full px-4 py-4 flex justify-between items-center bg-[#181818] border-b border-[#333]">
         <div className="flex items-center gap-4">
           <div className="flex flex-col leading-tight">
              <h1 className="text-2xl font-black tracking-widest text-white">
@@ -414,7 +414,7 @@ const App: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col md:flex-row w-full max-w-5xl gap-4 p-4 overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row w-full gap-4 p-4 overflow-hidden">
         
         {/* Left Panel: Controls / Info */}
         <div className="w-full md:w-64 flex-shrink-0 flex flex-col gap-4">
@@ -457,8 +457,14 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="text-xs text-gray-500 mt-2 leading-relaxed">
-                   {t.instructions}
+                <div className="text-xs text-gray-500 mt-2 leading-relaxed space-y-3">
+                  <p>{t.instructions}</p>
+                  <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gray-500">
+                    <span>{t.controls}</span>
+                    <button onClick={resetGame} className="flex items-center gap-1 text-white bg-white/10 px-2 py-1 rounded hover:bg-white/20 transition-colors">
+                      <RotateCcw size={12} /> {t.reset}
+                    </button>
+                  </div>
                 </div>
              </div>
            )}
@@ -564,16 +570,6 @@ const App: React.FC = () => {
         </div>
 
       </div>
-
-      {/* Footer Controls */}
-      {mode === 'play' && (
-        <div className="w-full max-w-4xl p-4 flex justify-between items-center text-xs text-neutral-600">
-           <div>{t.controls}</div>
-           <button onClick={resetGame} className="flex items-center gap-1 hover:text-white transition-colors">
-              <RotateCcw size={12} /> {t.reset}
-           </button>
-        </div>
-      )}
     </div>
   );
 };

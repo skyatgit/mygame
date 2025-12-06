@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState, useLayoutEffect, useMemo } from 'react';
 import { LevelData, GameState, Position, TerrainType, CharacterType } from '../types';
 import { Block } from './Block';
 import { getEffectiveTerrain } from '../terrainUtils';
@@ -27,6 +27,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const p2Pos = gameState ? gameState.p2Pos : editorP2Start;
   const activeChar = gameState ? gameState.activeChar : undefined;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
+
+  useLayoutEffect(() => {
+    const updateSize = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setViewportSize({ width: rect.width, height: rect.height });
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  const tileSize = useMemo(() => {
+    if (!viewportSize.width || !viewportSize.height) return editorMode ? 36 : 48;
+    const padding = 48;
+    const availableWidth = Math.max(viewportSize.width - padding, 0);
+    const availableHeight = Math.max(viewportSize.height - padding, 0);
+    const sizeByWidth = availableWidth / level.width;
+    const sizeByHeight = availableHeight / level.height;
+    return Math.max(Math.min(sizeByWidth, sizeByHeight), 16);
+  }, [viewportSize, level.width, level.height, editorMode]);
+
+  const boardWidth = level.width * tileSize;
+  const boardHeight = level.height * tileSize;
+
   // Helper to identify the specific visual type of the wall.
   // Returns a specific string for each wall type, or null if it's not a wall.
   // This allows us to ensure that only walls of the SAME type merge visually.
@@ -54,16 +82,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div 
-      className="inline-block bg-[#050505] p-6 rounded-xl shadow-2xl select-none"
+      ref={containerRef}
+      className="flex bg-[#050505] p-6 rounded-xl shadow-2xl select-none w-full h-full"
+      style={{ minWidth: 0, minHeight: 0 }}
       onMouseLeave={() => {}}
     >
       <div 
-        className="grid bg-[#050505]"
+        className="grid bg-[#050505] mx-auto"
         style={{
           gridTemplateColumns: `repeat(${level.width}, minmax(0, 1fr))`,
-          width: `min(90vw, ${level.width * (editorMode ? 36 : 48)}px)`,
-          maxWidth: '800px',
-          gap: '0px' // No gap logic handled by visual connection
+          width: `${boardWidth}px`,
+          height: `${boardHeight}px`,
+          gap: '0px'
         }}
       >
         {level.terrain.map((row, y) => (
@@ -117,18 +147,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 className="aspect-square w-full"
               >
                 <Block 
-                  x={x} 
-                  y={y}
-                  terrain={terrain}
-                  p1Pos={p1Pos}
-                  p2Pos={p2Pos}
-                  activeChar={activeChar}
-                  isTarget={isTarget && !isTargetCollected}
-                  connections={connections}
-                  innerCorners={innerCorners}
-                  editorMode={editorMode}
-                  onBlockClick={onBlockClick}
-                />
+                   x={x} 
+                   y={y}
+                   terrain={terrain}
+                   p1Pos={p1Pos}
+                   p2Pos={p2Pos}
+                   activeChar={activeChar}
+                   isTarget={isTarget && !isTargetCollected}
+                   connections={connections}
+                   innerCorners={innerCorners}
+                   editorMode={editorMode}
+                   onBlockClick={onBlockClick}
+                   tileSize={tileSize}
+                 />
               </div>
             );
           })
