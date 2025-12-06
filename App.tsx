@@ -158,6 +158,9 @@ const App: React.FC = () => {
     }
   };
 
+  const gamepadButtonStateRef = useRef({ start: false, switch: false, reset: false });
+  const lastGamepadMoveTimeRef = useRef(0);
+ 
   // --- Game Logic ---
 
   const resetGame = useCallback(() => {
@@ -305,9 +308,6 @@ const App: React.FC = () => {
   // Gamepad Loop
   useEffect(() => {
     let animationFrameId: number;
-    let lastButtonState = { start: false, switch: false, reset: false, up: false, down: false, left: false, right: false };
-    // Cooldown for d-pad/sticks to prevent zooming
-    let lastMoveTime = 0;
     const MOVE_COOLDOWN = 150; 
 
     const pollGamepad = () => {
@@ -315,9 +315,10 @@ const App: React.FC = () => {
       const gp = gamepads[0]; // Assume P1
       if (gp && mode === 'play') {
         const btnStart = gp.buttons[0]?.pressed ?? false;
+        const lastButtonState = gamepadButtonStateRef.current;
         if (!hasStarted) {
           if (btnStart && !lastButtonState.start) startGame();
-          lastButtonState = { ...lastButtonState, start: btnStart };
+          gamepadButtonStateRef.current = { ...lastButtonState, start: btnStart };
           animationFrameId = requestAnimationFrame(pollGamepad);
           return;
         }
@@ -328,31 +329,31 @@ const App: React.FC = () => {
  
          if (btnSwitch && !lastButtonState.switch) handleSwitch();
          if (btnReset && !lastButtonState.reset) resetGame();
-
-        // D-Pad / Stick
-        // Axes: 0 (Left Stick X), 1 (Left Stick Y)
-        const axisX = gp.axes[0];
-        const axisY = gp.axes[1];
-        const dpadUp = gp.buttons[12]?.pressed;
-        const dpadDown = gp.buttons[13]?.pressed;
-        const dpadLeft = gp.buttons[14]?.pressed;
-        const dpadRight = gp.buttons[15]?.pressed;
-
-        const now = performance.now();
-        if (now - lastMoveTime > MOVE_COOLDOWN) {
-            if (axisY < -0.5 || dpadUp) { handleMove(0, -1); lastMoveTime = now; }
-            else if (axisY > 0.5 || dpadDown) { handleMove(0, 1); lastMoveTime = now; }
-            else if (axisX < -0.5 || dpadLeft) { handleMove(-1, 0); lastMoveTime = now; }
-            else if (axisX > 0.5 || dpadRight) { handleMove(1, 0); lastMoveTime = now; }
+ 
+         // D-Pad / Stick
+         // Axes: 0 (Left Stick X), 1 (Left Stick Y)
+         const axisX = gp.axes[0];
+         const axisY = gp.axes[1];
+         const dpadUp = gp.buttons[12]?.pressed;
+         const dpadDown = gp.buttons[13]?.pressed;
+         const dpadLeft = gp.buttons[14]?.pressed;
+         const dpadRight = gp.buttons[15]?.pressed;
+ 
+         const now = performance.now();
+         if (now - lastGamepadMoveTimeRef.current > MOVE_COOLDOWN) {
+             if (axisY < -0.5 || dpadUp) { handleMove(0, -1); lastGamepadMoveTimeRef.current = now; }
+             else if (axisY > 0.5 || dpadDown) { handleMove(0, 1); lastGamepadMoveTimeRef.current = now; }
+             else if (axisX < -0.5 || dpadLeft) { handleMove(-1, 0); lastGamepadMoveTimeRef.current = now; }
+             else if (axisX > 0.5 || dpadRight) { handleMove(1, 0); lastGamepadMoveTimeRef.current = now; }
+         }
+ 
+         gamepadButtonStateRef.current = { ...lastButtonState, start: btnStart, switch: btnSwitch, reset: btnReset };
         }
-
-        lastButtonState = { ...lastButtonState, start: btnStart, switch: btnSwitch, reset: btnReset };
-       }
        animationFrameId = requestAnimationFrame(pollGamepad);
-    };
-    animationFrameId = requestAnimationFrame(pollGamepad);
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [handleMove, handleSwitch, resetGame, mode]);
+     };
+     animationFrameId = requestAnimationFrame(pollGamepad);
+     return () => cancelAnimationFrame(animationFrameId);
+   }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame]);
 
 
   // --- Editor Logic ---
