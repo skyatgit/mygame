@@ -6,6 +6,10 @@ export const GAME_CONFIG = {
   KEYBOARD_REPEAT_DELAY_MS: 280,
 } as const;
 
+// 键盘按键常量
+export const SWITCH_KEYS = [' ', 'Enter', 'e', 'E'] as const;
+export const RESET_KEYS = ['r', 'R'] as const;
+
 // 键盘方向映射
 export type DirectionKey = 'up' | 'down' | 'left' | 'right';
 export type DirectionVector = { key: DirectionKey; dx: number; dy: number };

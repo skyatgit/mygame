@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useLayoutEffect, useMemo } from 'react';
 import { TEXT, INITIAL_LEVEL } from './constants';
 import { GameBoard } from './components/GameBoard';
 import { LevelData, GameState, CharacterType, TerrainType, Lang, EditorTool, Position } from './types';
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
 import { useAudio } from './hooks/useAudio';
-import { KEYBOARD_DIRECTION_MAP, GAME_CONFIG, DirectionKey, DirectionVector } from './gameConfig';
+import { KEYBOARD_DIRECTION_MAP, GAME_CONFIG, DirectionKey, DirectionVector, SWITCH_KEYS, RESET_KEYS } from './gameConfig';
 
 const computeCollectedTargets = (level: LevelData, p1: Position, p2: Position) =>
   level.targets.map(t => (t.x === p1.x && t.y === p1.y) || (t.x === p2.x && t.y === p2.y));
@@ -208,38 +208,35 @@ const App: React.FC = () => {
     setMoveCount(0);
     setIsWon(false);
   }, [currentLevel]);
- 
-  const collectedCount = gameState.collectedTargets.filter(Boolean).length;
+
+  const collectedCount = useMemo(
+    () => gameState.collectedTargets.filter(Boolean).length,
+    [gameState.collectedTargets]
+  );
+
   useEffect(() => {
     if (collectedCount === currentLevel.targets.length && currentLevel.targets.length > 0) {
       setIsWon(true);
       playSound('win');
     }
-  }, [collectedCount, currentLevel.targets.length]);
+  }, [collectedCount, currentLevel.targets.length, playSound]);
 
   const handleSwitch = useCallback(() => {
     if (isWon || mode === 'edit' || !hasStarted) return;
 
-    const overlapping =
-      gameStateRef.current.p1Pos.x === gameStateRef.current.p2Pos.x &&
-      gameStateRef.current.p1Pos.y === gameStateRef.current.p2Pos.y;
+    const { p1Pos, p2Pos, activeChar } = gameStateRef.current;
+    const overlapping = p1Pos.x === p2Pos.x && p1Pos.y === p2Pos.y;
 
     if (overlapping) {
       playSound('error');
       return;
     }
 
-    setGameState(prev => {
-      const stillOverlapping = prev.p1Pos.x === prev.p2Pos.x && prev.p1Pos.y === prev.p2Pos.y;
-      if (stillOverlapping) {
-        return prev;
-      }
-      return {
-        ...prev,
-        activeChar: prev.activeChar === CharacterType.P1_White
-          ? CharacterType.P2_Black
-          : CharacterType.P1_White
-      };
+    setGameState({
+      ...gameStateRef.current,
+      activeChar: activeChar === CharacterType.P1_White
+        ? CharacterType.P2_Black
+        : CharacterType.P1_White
     });
   }, [hasStarted, isWon, mode, playSound]);
 
@@ -262,22 +259,19 @@ const App: React.FC = () => {
         lastKeyboardDirectionRef.current = direction.key;
         return;
       }
-      switch (e.key) {
-        case ' ': case 'Enter': case 'e': case 'E':
-          if (!keyboardSwitchHeldRef.current && now - lastKeyboardSwitchTimeRef.current >= GAME_CONFIG.SWITCH_COOLDOWN_MS) {
-            handleSwitch();
-            lastKeyboardSwitchTimeRef.current = now;
-            keyboardSwitchHeldRef.current = true;
-          }
-          break;
-        case 'r': case 'R':
-          resetGame();
-          break;
+      if (SWITCH_KEYS.includes(e.key as any)) {
+        if (!keyboardSwitchHeldRef.current && now - lastKeyboardSwitchTimeRef.current >= GAME_CONFIG.SWITCH_COOLDOWN_MS) {
+          handleSwitch();
+          lastKeyboardSwitchTimeRef.current = now;
+          keyboardSwitchHeldRef.current = true;
+        }
+      } else if (RESET_KEYS.includes(e.key as any)) {
+        resetGame();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === ' ' || e.key === 'Enter' || e.key === 'e' || e.key === 'E') {
+      if (SWITCH_KEYS.includes(e.key as any)) {
         keyboardSwitchHeldRef.current = false;
       }
       const releasedDirection = KEYBOARD_DIRECTION_MAP[e.key];
@@ -373,38 +367,57 @@ const App: React.FC = () => {
   // --- Editor Logic ---
   const handleEditorClick = (x: number, y: number) => {
     if (mode !== 'edit') return;
-    
+
     // Create deep copy
     const newLevel = { ...currentLevel, terrain: currentLevel.terrain.map(r => [...r]) };
-    
-    // Tools
-    if (editorTool === 'wall') newLevel.terrain[y][x] = TerrainType.Wall;
-    else if (editorTool === 'light') newLevel.terrain[y][x] = TerrainType.LightTile;
-    else if (editorTool === 'dark') newLevel.terrain[y][x] = TerrainType.DarkTile;
-    else if (editorTool === 'eraser') newLevel.terrain[y][x] = TerrainType.Void;
-    else if (editorTool === 'p1') {
-      if (newLevel.terrain[y][x] !== TerrainType.DarkTile) {
-        playSound('error');
-        return;
-      }
-      newLevel.p1Start = { x, y };
-    }
-    else if (editorTool === 'p2') {
-      if (newLevel.terrain[y][x] !== TerrainType.LightTile) {
-        playSound('error');
-        return;
-      }
-      newLevel.p2Start = { x, y };
-    }
-    else if (editorTool === 'target') {
-      if (newLevel.terrain[y][x] === TerrainType.Wall) {
-        playSound('error');
-        return;
-      }
-      // Toggle target
-      const idx = newLevel.targets.findIndex(t => t.x === x && t.y === y);
-      if (idx >= 0) newLevel.targets = newLevel.targets.filter((_, i) => i !== idx);
-      else newLevel.targets = [...newLevel.targets, { x, y }];
+
+    // Handle different editor tools
+    switch (editorTool) {
+      case 'wall':
+        newLevel.terrain[y][x] = TerrainType.Wall;
+        break;
+
+      case 'light':
+        newLevel.terrain[y][x] = TerrainType.LightTile;
+        break;
+
+      case 'dark':
+        newLevel.terrain[y][x] = TerrainType.DarkTile;
+        break;
+
+      case 'eraser':
+        newLevel.terrain[y][x] = TerrainType.Void;
+        break;
+
+      case 'p1':
+        if (newLevel.terrain[y][x] !== TerrainType.DarkTile) {
+          playSound('error');
+          return;
+        }
+        newLevel.p1Start = { x, y };
+        break;
+
+      case 'p2':
+        if (newLevel.terrain[y][x] !== TerrainType.LightTile) {
+          playSound('error');
+          return;
+        }
+        newLevel.p2Start = { x, y };
+        break;
+
+      case 'target':
+        if (newLevel.terrain[y][x] === TerrainType.Wall) {
+          playSound('error');
+          return;
+        }
+        // Toggle target
+        const idx = newLevel.targets.findIndex(t => t.x === x && t.y === y);
+        if (idx >= 0) {
+          newLevel.targets = newLevel.targets.filter((_, i) => i !== idx);
+        } else {
+          newLevel.targets = [...newLevel.targets, { x, y }];
+        }
+        break;
     }
 
     setCurrentLevel(newLevel);
