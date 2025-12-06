@@ -8,6 +8,24 @@ import {
 } from 'lucide-react';
 import { getEffectiveTerrain } from './terrainUtils';
 
+type DirectionKey = 'up' | 'down' | 'left' | 'right';
+type DirectionVector = { key: DirectionKey; dx: number; dy: number };
+
+const KEYBOARD_DIRECTION_MAP: Record<string, DirectionVector> = {
+  ArrowUp: { key: 'up', dx: 0, dy: -1 },
+  w: { key: 'up', dx: 0, dy: -1 },
+  W: { key: 'up', dx: 0, dy: -1 },
+  ArrowDown: { key: 'down', dx: 0, dy: 1 },
+  s: { key: 'down', dx: 0, dy: 1 },
+  S: { key: 'down', dx: 0, dy: 1 },
+  ArrowLeft: { key: 'left', dx: -1, dy: 0 },
+  a: { key: 'left', dx: -1, dy: 0 },
+  A: { key: 'left', dx: -1, dy: 0 },
+  ArrowRight: { key: 'right', dx: 1, dy: 0 },
+  d: { key: 'right', dx: 1, dy: 0 },
+  D: { key: 'right', dx: 1, dy: 0 }
+};
+
 const computeCollectedTargets = (level: LevelData, p1: Position, p2: Position) =>
   level.targets.map(t => (t.x === p1.x && t.y === p1.y) || (t.x === p2.x && t.y === p2.y));
 
@@ -92,6 +110,8 @@ const App: React.FC = () => {
       if (event.key === 'e' || event.key === 'E') {
         event.preventDefault();
         startGame();
+        keyboardSwitchHeldRef.current = true;
+        lastKeyboardSwitchTimeRef.current = performance.now();
       }
     };
 
@@ -161,34 +181,16 @@ const App: React.FC = () => {
   const gamepadButtonStateRef = useRef({ start: false, switch: false, reset: false });
   const lastGamepadMoveTimeRef = useRef(0);
   const suppressGamepadSwitchRef = useRef(false);
+  const lastKeyboardMoveTimeRef = useRef(0);
+  const lastKeyboardDirectionRef = useRef<DirectionKey | null>(null);
+  const keyboardActiveDirectionRef = useRef<DirectionVector | null>(null);
+  const keyboardRepeatIntervalRef = useRef<number | null>(null);
+  const lastKeyboardSwitchTimeRef = useRef(0);
+  const keyboardSwitchHeldRef = useRef(false);
+  const MOVE_COOLDOWN_MS = 280;
+  const SWITCH_COOLDOWN_MS = 200;
+  const lastGamepadDirectionRef = useRef<DirectionKey | null>(null);
  
-  useEffect(() => {
-    if (!hasStarted) return;
-    gamepadButtonStateRef.current = { start: false, switch: false, reset: false };
-    lastGamepadMoveTimeRef.current = performance.now();
-  }, [hasStarted]);
- 
-  // --- Game Logic ---
-
-  const resetGame = useCallback(() => {
-    setGameState({
-      p1Pos: { ...currentLevel.p1Start },
-      p2Pos: { ...currentLevel.p2Start },
-      activeChar: CharacterType.P1_White,
-      collectedTargets: computeCollectedTargets(currentLevel, currentLevel.p1Start, currentLevel.p2Start)
-    });
-    setMoveCount(0);
-    setIsWon(false);
-  }, [currentLevel]);
- 
-  const collectedCount = gameState.collectedTargets.filter(Boolean).length;
-  useEffect(() => {
-    if (collectedCount === currentLevel.targets.length && currentLevel.targets.length > 0) {
-      setIsWon(true);
-      playSound('win');
-    }
-  }, [collectedCount, currentLevel.targets.length]);
-
   const handleMove = useCallback((dx: number, dy: number) => {
     if (isWon || mode === 'edit' || !hasStarted) return;
     initAudio();
@@ -267,6 +269,57 @@ const App: React.FC = () => {
     });
   }, [currentLevel, hasStarted, initAudio, isWon, mode, playSound]);
 
+  const stopKeyboardRepeat = useCallback(() => {
+    if (keyboardRepeatIntervalRef.current !== null) {
+      clearInterval(keyboardRepeatIntervalRef.current);
+      keyboardRepeatIntervalRef.current = null;
+    }
+  }, []);
+
+  const startKeyboardRepeat = useCallback(() => {
+    if (keyboardRepeatIntervalRef.current !== null) return;
+    keyboardRepeatIntervalRef.current = window.setInterval(() => {
+      const activeDir = keyboardActiveDirectionRef.current;
+      if (!activeDir || mode === 'edit' || !hasStarted) {
+        stopKeyboardRepeat();
+        return;
+      }
+      handleMove(activeDir.dx, activeDir.dy);
+    }, MOVE_COOLDOWN_MS);
+  }, [handleMove, hasStarted, mode, MOVE_COOLDOWN_MS, stopKeyboardRepeat]);
+
+  useEffect(() => {
+    return () => stopKeyboardRepeat();
+  }, [stopKeyboardRepeat]);
+
+  useEffect(() => {
+    if (mode === 'edit' || !hasStarted) {
+      keyboardActiveDirectionRef.current = null;
+      stopKeyboardRepeat();
+    }
+  }, [mode, hasStarted, stopKeyboardRepeat]);
+
+  // --- Game Logic ---
+
+  const resetGame = useCallback(() => {
+    setGameState({
+      p1Pos: { ...currentLevel.p1Start },
+      p2Pos: { ...currentLevel.p2Start },
+      activeChar: CharacterType.P1_White,
+      collectedTargets: computeCollectedTargets(currentLevel, currentLevel.p1Start, currentLevel.p2Start)
+    });
+    setMoveCount(0);
+    setIsWon(false);
+  }, [currentLevel]);
+ 
+  const collectedCount = gameState.collectedTargets.filter(Boolean).length;
+  useEffect(() => {
+    if (collectedCount === currentLevel.targets.length && currentLevel.targets.length > 0) {
+      setIsWon(true);
+      playSound('win');
+    }
+  }, [collectedCount, currentLevel.targets.length]);
+
   const handleSwitch = useCallback(() => {
     if (isWon || mode === 'edit' || !hasStarted) return;
     initAudio();
@@ -297,32 +350,68 @@ const App: React.FC = () => {
   // --- Input Handlers ---
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (mode === 'edit') return; // Disable game controls in edit mode
-
+      if (mode === 'edit' || !hasStarted) return;
+      const now = performance.now();
+      const direction = KEYBOARD_DIRECTION_MAP[e.key];
+      if (direction) {
+        const isNewDirection = keyboardActiveDirectionRef.current?.key !== direction.key;
+        if (isNewDirection) {
+          keyboardActiveDirectionRef.current = direction;
+          handleMove(direction.dx, direction.dy);
+          lastKeyboardMoveTimeRef.current = now;
+          startKeyboardRepeat();
+        } else if (keyboardRepeatIntervalRef.current === null) {
+          startKeyboardRepeat();
+        }
+        lastKeyboardDirectionRef.current = direction.key;
+        return;
+      }
       switch (e.key) {
-        case 'ArrowUp': case 'w': case 'W': handleMove(0, -1); break;
-        case 'ArrowDown': case 's': case 'S': handleMove(0, 1); break;
-        case 'ArrowLeft': case 'a': case 'A': handleMove(-1, 0); break;
-        case 'ArrowRight': case 'd': case 'D': handleMove(1, 0); break;
-        case ' ': case 'Enter': case 'e': case 'E': handleSwitch(); break;
-        case 'r': case 'R': resetGame(); break;
+        case ' ': case 'Enter': case 'e': case 'E':
+          if (!keyboardSwitchHeldRef.current && now - lastKeyboardSwitchTimeRef.current >= SWITCH_COOLDOWN_MS) {
+            handleSwitch();
+            lastKeyboardSwitchTimeRef.current = now;
+            keyboardSwitchHeldRef.current = true;
+          }
+          break;
+        case 'r': case 'R':
+          resetGame();
+          break;
       }
     };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'e' || e.key === 'E') {
+        keyboardSwitchHeldRef.current = false;
+      }
+      const releasedDirection = KEYBOARD_DIRECTION_MAP[e.key];
+      if (releasedDirection) {
+        lastKeyboardDirectionRef.current = null;
+        if (keyboardActiveDirectionRef.current?.key === releasedDirection.key) {
+          keyboardActiveDirectionRef.current = null;
+          stopKeyboardRepeat();
+        }
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleMove, handleSwitch, resetGame, mode]);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startKeyboardRepeat, stopKeyboardRepeat]);
 
   // Gamepad Loop
   useEffect(() => {
     let animationFrameId: number;
-    const MOVE_COOLDOWN = 150; 
-
-    const pollGamepad = () => {
-      const gamepads = navigator.getGamepads();
-      const gp = gamepads[0]; // Assume P1
-      if (gp && mode === 'play') {
-        const btnStart = gp.buttons[0]?.pressed ?? false;
-        const prevButtonState = gamepadButtonStateRef.current;
+ 
+     const pollGamepad = () => {
+       const gamepads = navigator.getGamepads();
+       const gp = gamepads[0]; // Assume P1
+       if (gp && mode === 'play') {
+         const btnStart = gp.buttons[0]?.pressed ?? false;
+         const prevButtonState = gamepadButtonStateRef.current;
          if (!hasStarted) {
           if (btnStart && !prevButtonState.start) {
             startGame();
@@ -355,11 +444,24 @@ const App: React.FC = () => {
          const dpadRight = gp.buttons[15]?.pressed;
  
          const now = performance.now();
-         if (now - lastGamepadMoveTimeRef.current > MOVE_COOLDOWN) {
-             if (axisY < -0.5 || dpadUp) { handleMove(0, -1); lastGamepadMoveTimeRef.current = now; }
-             else if (axisY > 0.5 || dpadDown) { handleMove(0, 1); lastGamepadMoveTimeRef.current = now; }
-             else if (axisX < -0.5 || dpadLeft) { handleMove(-1, 0); lastGamepadMoveTimeRef.current = now; }
-             else if (axisX > 0.5 || dpadRight) { handleMove(1, 0); lastGamepadMoveTimeRef.current = now; }
+ 
+         const activeDirection: DirectionVector | null = (() => {
+           if (axisY < -0.5 || dpadUp) return { key: 'up', dx: 0, dy: -1 };
+           if (axisY > 0.5 || dpadDown) return { key: 'down', dx: 0, dy: 1 };
+           if (axisX < -0.5 || dpadLeft) return { key: 'left', dx: -1, dy: 0 };
+           if (axisX > 0.5 || dpadRight) return { key: 'right', dx: 1, dy: 0 };
+           return null;
+         })();
+ 
+         if (activeDirection) {
+           const isContinuous = lastGamepadDirectionRef.current === activeDirection.key;
+           if (!isContinuous || now - lastGamepadMoveTimeRef.current >= MOVE_COOLDOWN_MS) {
+             handleMove(activeDirection.dx, activeDirection.dy);
+             lastGamepadMoveTimeRef.current = now;
+           }
+           lastGamepadDirectionRef.current = activeDirection.key;
+         } else {
+           lastGamepadDirectionRef.current = null;
          }
  
          gamepadButtonStateRef.current = { start: btnStart, switch: btnSwitch, reset: btnReset };
@@ -368,7 +470,7 @@ const App: React.FC = () => {
      };
      animationFrameId = requestAnimationFrame(pollGamepad);
      return () => cancelAnimationFrame(animationFrameId);
-   }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame]);
+   }, [handleMove, handleSwitch, resetGame, mode, hasStarted, startGame, MOVE_COOLDOWN_MS]);
 
 
   // --- Editor Logic ---
